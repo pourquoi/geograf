@@ -1,0 +1,81 @@
+{
+  "id": "95e11445-8d2a-4218-8caf-e612c023da8d",
+  "name": "ff",
+  "nodes": [
+    {
+      "id": "0b4042e1-f340-47c8-a6a1-722b160373af",
+      "data": {
+        "cache": true,
+        "format": {
+          "comma_delimiter": true,
+          "type": "Json"
+        },
+        "label": "Source 2",
+        "source": "https://microsoftedge.github.io/Demos/json-dummy-data/512KB.json"
+      },
+      "type": "SourceNode",
+      "position": {
+        "x": -25.628676952474905,
+        "y": -122.93253302185612
+      }
+    },
+    {
+      "id": "20ad4c21-a09a-4a62-aa0c-d5e16555d99a",
+      "data": {
+        "cache": true,
+        "format": {
+          "comma_delimiter": true,
+          "type": "Json"
+        },
+        "label": "Source 1",
+        "source": "https://microsoftedge.github.io/Demos/json-dummy-data/512KB.json"
+      },
+      "type": "SourceNode",
+      "position": {
+        "x": -93.33243369639894,
+        "y": -501.77052453502944
+      }
+    },
+    {
+      "id": "0352686c-67b6-4b6b-871d-31344e1fd620",
+      "data": {
+        "horizontal": false,
+        "label": "Concat 2 datasets"
+      },
+      "type": "ConcatNode",
+      "position": {
+        "x": 1029.6777100772574,
+        "y": -313.41583712553233
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "xy-edge__0b4042e1-f340-47c8-a6a1-722b160373af-00a665cb-3167-4f46-a92e-1b809c1d8325left",
+      "source": "0b4042e1-f340-47c8-a6a1-722b160373af",
+      "target": "00a665cb-3167-4f46-a92e-1b809c1d8325",
+      "sourceHandle": null,
+      "targetHandle": "left",
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__0b4042e1-f340-47c8-a6a1-722b160373af-0352686c-67b6-4b6b-871d-31344e1fd620second",
+      "source": "0b4042e1-f340-47c8-a6a1-722b160373af",
+      "target": "0352686c-67b6-4b6b-871d-31344e1fd620",
+      "sourceHandle": null,
+      "targetHandle": "second",
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__20ad4c21-a09a-4a62-aa0c-d5e16555d99a-0352686c-67b6-4b6b-871d-31344e1fd620first",
+      "source": "20ad4c21-a09a-4a62-aa0c-d5e16555d99a",
+      "target": "0352686c-67b6-4b6b-871d-31344e1fd620",
+      "sourceHandle": null,
+      "targetHandle": "first",
+      "type": "CustomEdge",
+      "data": null
+    }
+  ]
+}

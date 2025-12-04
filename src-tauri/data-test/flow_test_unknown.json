@@ -1,0 +1,59 @@
+{
+  "id": "test",
+  "name": "Test",
+  "nodes": [
+    {
+      "id": "1",
+      "data": {
+        "label": "Node 1"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "SomeNodeNodeNotSupported"
+    },
+    {
+      "id": "2",
+      "data": {
+        "label": "Node 2"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "SomeNodeNodeNotSupported"
+    },
+    {
+      "id": "3",
+      "data": {
+        "label": "Node 3"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "SomeNodeNodeNotSupported"
+    }
+  ],
+  "edges": [
+    {
+      "id": "1",
+      "source": "1",
+      "target": "2"
+    },
+    {
+      "id": "2",
+      "source": "2",
+      "target": "3",
+      "targetHandle": "node3_in_A"
+    },
+    {
+      "id": "2",
+      "source": "2",
+      "target": "3",
+      "sourceHandle": "node2_out_A",
+      "targetHandle": "node3_in_A"
+    }
+  ]
+}

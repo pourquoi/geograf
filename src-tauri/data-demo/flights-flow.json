@@ -1,0 +1,161 @@
+{
+  "id": "22fb463f-272b-4bfe-ac03-6d174bf854be",
+  "name": "sdfdsf",
+  "nodes": [
+    {
+      "id": "6a3ced68-5cca-4b7e-aa9c-0f6b9f5c1918",
+      "data": {
+        "cache": true,
+        "format": {
+          "comma_delimiter": true,
+          "type": "Parquet"
+        },
+        "label": "Source",
+        "source": "https://www.agentsfordata.com/sample-datasets/flights-1m.parquet"
+      },
+      "type": "SourceNode",
+      "position": {
+        "x": -228.8128899640854,
+        "y": -334.6042863707767
+      }
+    },
+    {
+      "id": "09ad9a21-1b19-4fff-8401-8f366f4e62a6",
+      "data": {
+        "exprs": [
+          "col(\"FL_DATE\").year().alias(\"FL_YEAR\")",
+          "(col(\"ARR_DELAY\") + col(\"DEP_DELAY\")).alias(\"TOTAL_DELAY\")",
+          "(col(\"DISTANCE\").cast(\"float\") / col(\"AIR_TIME\").cast(\"float\")).alias(\"SPEED\")"
+        ],
+        "label": "Select",
+        "with_columns": true
+      },
+      "type": "SelectNode",
+      "position": {
+        "x": 901.17723556982,
+        "y": 57.36274936051677
+      }
+    },
+    {
+      "id": "96d6a990-70c2-4c90-ba67-980f7f47c69b",
+      "data": {
+        "aggrs": [
+          "mean(col(\"ARR_DELAY\"))",
+          "len()",
+          "mean(col(\"DEP_DELAY\"))"
+        ],
+        "exprs": [
+          "col(\"FL_DATE\")"
+        ],
+        "label": "GroupBy"
+      },
+      "type": "GroupByNode",
+      "position": {
+        "x": 893.1708382534651,
+        "y": -510.626611155893
+      }
+    },
+    {
+      "id": "7273afff-1221-46de-81a4-dc908da51d1c",
+      "data": {
+        "chart_type": "bar",
+        "label": "Plot Delay / Day",
+        "x_axis": "FL_DATE",
+        "y_axis": [
+          "ARR_DELAY",
+          "DEP_DELAY"
+        ]
+      },
+      "type": "ChartNode",
+      "position": {
+        "x": 1878.0544073825777,
+        "y": -291.0246751623142
+      }
+    },
+    {
+      "id": "5249f3dc-684f-4a05-98a1-18b11e34276c",
+      "data": {
+        "by": [
+          {
+            "asc": true,
+            "name": "FL_DATE"
+          }
+        ],
+        "label": "Sort"
+      },
+      "type": "SortNode",
+      "position": {
+        "x": 1407.0148239615464,
+        "y": -418.3374760193506
+      }
+    },
+    {
+      "id": "be8463ef-6429-485e-a5f5-f9a1fd8275e7",
+      "data": {
+        "expr": "col(\"AIR_TIME\") > 0",
+        "label": "Filter"
+      },
+      "type": "FilterNode",
+      "position": {
+        "x": 456.3593997654708,
+        "y": -63.90041599632383
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "xy-edge__6a3ced68-5cca-4b7e-aa9c-0f6b9f5c1918-92dd414e-f10a-40fe-beb0-caa69a297251",
+      "source": "6a3ced68-5cca-4b7e-aa9c-0f6b9f5c1918",
+      "target": "92dd414e-f10a-40fe-beb0-caa69a297251",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__96d6a990-70c2-4c90-ba67-980f7f47c69b-5249f3dc-684f-4a05-98a1-18b11e34276c",
+      "source": "96d6a990-70c2-4c90-ba67-980f7f47c69b",
+      "target": "5249f3dc-684f-4a05-98a1-18b11e34276c",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__5249f3dc-684f-4a05-98a1-18b11e34276c-7273afff-1221-46de-81a4-dc908da51d1c",
+      "source": "5249f3dc-684f-4a05-98a1-18b11e34276c",
+      "target": "7273afff-1221-46de-81a4-dc908da51d1c",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__6a3ced68-5cca-4b7e-aa9c-0f6b9f5c1918-96d6a990-70c2-4c90-ba67-980f7f47c69b",
+      "source": "6a3ced68-5cca-4b7e-aa9c-0f6b9f5c1918",
+      "target": "96d6a990-70c2-4c90-ba67-980f7f47c69b",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__be8463ef-6429-485e-a5f5-f9a1fd8275e7-09ad9a21-1b19-4fff-8401-8f366f4e62a6",
+      "source": "be8463ef-6429-485e-a5f5-f9a1fd8275e7",
+      "target": "09ad9a21-1b19-4fff-8401-8f366f4e62a6",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__6a3ced68-5cca-4b7e-aa9c-0f6b9f5c1918-be8463ef-6429-485e-a5f5-f9a1fd8275e7",
+      "source": "6a3ced68-5cca-4b7e-aa9c-0f6b9f5c1918",
+      "target": "be8463ef-6429-485e-a5f5-f9a1fd8275e7",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    }
+  ]
+}

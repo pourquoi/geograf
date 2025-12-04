@@ -1,0 +1,68 @@
+// loose polars DSL
+// test with https://pest.rs/#editor
+
+
+// ENTRY POINT
+
+program = { SOI ~ expr ~ EOI }
+
+// EXPRESSION GRAMMAR
+
+expr = { prefix? ~ primary ~ (infix ~ prefix? ~ primary)* }
+
+prefix = _{ logical_not | neg }
+neg = { "-" }
+
+// need to be "loud" for some reason
+primary = { (function_call | atom) ~ dot_method* }
+
+function_call = { col_call | lit_call | (ident ~ call_args) }
+
+atom = _{
+    number |
+    string |
+    ident |
+    "(" ~ expr ~ ")"
+}
+
+infix = _{
+    add | subtract | multiply | divide | modulo | power |
+    eq | ne | le | ge | lt | gt | 
+    logical_and | logical_or
+}
+
+col_call   = { "col" ~ "(" ~ string ~ ")" }
+lit_call   = { "lit" ~ "(" ~ (string | number) ~ ")" }
+dot_method = { "." ~ ident ~ call_args? }
+
+call_args  = { "(" ~ (arg_list)? ~ ")" }
+arg_list   = { arg ~ ("," ~ arg)* }
+arg        = _{ expr }
+
+// OPERATORS
+
+add = { "+" }
+subtract = { "-" }
+multiply = { "*" }
+divide = { "/" }
+modulo = { "%" }
+power = { "^" | "**" }
+
+eq = { "==" }
+ne = { "!=" }
+le = { "<=" }  // Must come before "<" to avoid tokenizing "<=" as "<" + "=" in the `infix_op` rule later
+ge = { ">=" }  // Must come before ">" to avoid tokenizing ">=" as ">" + "=" in the `infix_op` rule later
+lt = { "<" }
+gt = { ">" }
+
+logical_and = { "&&" | "and"}
+logical_or = { "||" | "or" }
+logical_not = { "!" | "not" }
+
+// LEXICAL ELEMENTS
+
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+
+ident      = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+string     = @{ "\"" ~ ( !("\"") ~ ANY )* ~ "\"" }
+number     = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }

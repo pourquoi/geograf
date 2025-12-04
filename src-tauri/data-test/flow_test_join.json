@@ -1,0 +1,67 @@
+{
+  "id": "test",
+  "name": "Test",
+  "nodes": [
+    {
+      "id": "1",
+      "data": {
+        "label": "Customers",
+        "source": "data-test/customers-100.csv",
+        "format": {
+          "type": "Csv",
+          "comma_delimiter": true
+        },
+        "cache": false
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "SourceNode"
+    },
+    {
+      "id": "2",
+      "data": {
+        "label": "People",
+        "source": "data-test/people-100.csv",
+        "format": {
+          "type": "Csv",
+          "comma_delimiter": true
+        },
+        "cache": false
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "SourceNode"
+    },
+    {
+      "id": "3",
+      "data": {
+        "label": "Join",
+        "on": "col(\"First Name\")",
+        "how": "inner"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "JoinNode"
+    }
+  ],
+  "edges": [
+    {
+      "id": "1",
+      "source": "1",
+      "target": "3",
+      "targetHandle": "left"
+    },
+    {
+      "id": "2",
+      "source": "2",
+      "target": "3",
+      "targetHandle": "right"
+    }
+  ]
+}

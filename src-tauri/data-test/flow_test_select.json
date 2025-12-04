@@ -1,0 +1,45 @@
+{
+  "id": "test",
+  "name": "Test",
+  "nodes": [
+    {
+      "id": "1",
+      "data": {
+        "label": "Node 1",
+        "source": "data-test/customers-100.csv",
+        "format": {
+          "type": "Csv",
+          "comma_delimiter": true
+        },
+        "cache": false
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "SourceNode"
+    },
+    {
+      "id": "2",
+      "data": {
+        "label": "Node 2",
+        "exprs": [
+          "col(\"First Name\")"
+        ],
+        "with_columns": false
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "type": "SelectNode"
+    }
+  ],
+  "edges": [
+    {
+      "id": "1",
+      "source": "1",
+      "target": "2"
+    }
+  ]
+}

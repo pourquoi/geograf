@@ -1,0 +1,46 @@
+{
+  "id": "1a76db8f-77b3-4916-b1c3-9e12f879ecf5",
+  "name": "ff",
+  "nodes": [
+    {
+      "id": "8055c9b2-76fc-4236-9b13-175b2abdd2e4",
+      "data": {
+        "cache": true,
+        "format": {
+          "comma_delimiter": true,
+          "type": "Parquet"
+        },
+        "headers": [],
+        "label": "House Prices",
+        "source": "https://www.agentsfordata.com/sample-datasets/house-price.parquet"
+      },
+      "type": "SourceNode",
+      "position": {
+        "x": -128.03524293802457,
+        "y": -215.43235426777812
+      }
+    },
+    {
+      "id": "3ddaa444-9b4e-4622-a209-98b4dbe7f1a1",
+      "data": {
+        "label": "Describe"
+      },
+      "type": "DescribeNode",
+      "position": {
+        "x": 655.6637437368516,
+        "y": -136.94193711987833
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "xy-edge__8055c9b2-76fc-4236-9b13-175b2abdd2e4-3ddaa444-9b4e-4622-a209-98b4dbe7f1a1",
+      "source": "8055c9b2-76fc-4236-9b13-175b2abdd2e4",
+      "target": "3ddaa444-9b4e-4622-a209-98b4dbe7f1a1",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    }
+  ]
+}

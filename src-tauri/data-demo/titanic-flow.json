@@ -1,0 +1,175 @@
+{
+  "id": "96609a5a-a446-4b9f-aef1-ef05a0a9f392",
+  "name": "sdfdsf",
+  "nodes": [
+    {
+      "id": "e15ef665-b450-4377-ab19-73a9846168ff",
+      "data": {
+        "cache": true,
+        "format": {
+          "comma_delimiter": true,
+          "type": "Parquet"
+        },
+        "label": "Titanic dataset",
+        "source": "https://www.agentsfordata.com/sample-datasets/titanic.parquet"
+      },
+      "type": "SourceNode",
+      "position": {
+        "x": -457.0691952953479,
+        "y": -223.7046753500355
+      }
+    },
+    {
+      "id": "87cdddaa-dbcf-4690-b424-d044af327deb",
+      "data": {
+        "exprs": [
+          "col(\"Name\").len().alias(\"Name length\")",
+          "(col(\"Sex\") == \"male\").alias(\"Male\")",
+          "(col(\"Sex\") == \"female\").alias(\"Female\")",
+          "col(\"Survived\").cast(\"bool\")"
+        ],
+        "label": "Derive Features",
+        "with_columns": true
+      },
+      "type": "SelectNode",
+      "position": {
+        "x": 596.8201070464554,
+        "y": 81.6203731645121
+      }
+    },
+    {
+      "id": "e0c653d2-6b48-4ccd-8f16-030de6b082d3",
+      "data": {
+        "aggrs": [
+          "mean(col(\"Name length\")).alias(\"Mean Name Length\")",
+          "mean(col(\"Male\").cast(\"float\"))",
+          "mean(col(\"Female\").cast(\"float\"))",
+          "mean(col(\"Fare\")).alias(\"Mean Fare\")"
+        ],
+        "exprs": [
+          "col(\"Survived\")"
+        ],
+        "label": "Survival / Features"
+      },
+      "type": "GroupByNode",
+      "position": {
+        "x": 1277.9035762882822,
+        "y": -220.01991732658104
+      }
+    },
+    {
+      "id": "ba30e8ad-48b5-4440-8476-452fa04cd895",
+      "data": {
+        "dest": "",
+        "format": {
+          "comma_delimiter": true,
+          "type": "Parquet"
+        },
+        "label": "Sink"
+      },
+      "type": "SinkNode",
+      "position": {
+        "x": 1337.179695431722,
+        "y": 359.4147129591393
+      }
+    },
+    {
+      "id": "eb0c761a-2d90-4dfd-a22e-261e803b9e6c",
+      "data": {
+        "chart_type": "bar",
+        "label": "Plot Survival / Sex",
+        "x_axis": "Sex",
+        "y_axis": [
+          "Survived"
+        ]
+      },
+      "type": "ChartNode",
+      "position": {
+        "x": 1000.0615060004774,
+        "y": -663.2591709864499
+      }
+    },
+    {
+      "id": "8ead44e4-2ce1-4d4a-9341-4034ca22880a",
+      "data": {
+        "aggrs": [
+          "mean(col(\"Survived\"))"
+        ],
+        "exprs": [
+          "col(\"Sex\")"
+        ],
+        "label": "GroupBy Sex"
+      },
+      "type": "GroupByNode",
+      "position": {
+        "x": 423.76800925328894,
+        "y": -483.8071964817958
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "xy-edge__e15ef665-b450-4377-ab19-73a9846168ff-cb1cbe9e-bb75-4935-a1ad-ba62e29738f5",
+      "source": "e15ef665-b450-4377-ab19-73a9846168ff",
+      "target": "cb1cbe9e-bb75-4935-a1ad-ba62e29738f5",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__e15ef665-b450-4377-ab19-73a9846168ff-87cdddaa-dbcf-4690-b424-d044af327deb",
+      "source": "e15ef665-b450-4377-ab19-73a9846168ff",
+      "target": "87cdddaa-dbcf-4690-b424-d044af327deb",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__87cdddaa-dbcf-4690-b424-d044af327deb-e0c653d2-6b48-4ccd-8f16-030de6b082d3",
+      "source": "87cdddaa-dbcf-4690-b424-d044af327deb",
+      "target": "e0c653d2-6b48-4ccd-8f16-030de6b082d3",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__87cdddaa-dbcf-4690-b424-d044af327deb-ba30e8ad-48b5-4440-8476-452fa04cd895",
+      "source": "87cdddaa-dbcf-4690-b424-d044af327deb",
+      "target": "ba30e8ad-48b5-4440-8476-452fa04cd895",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__e15ef665-b450-4377-ab19-73a9846168ff-8ead44e4-2ce1-4d4a-9341-4034ca22880a",
+      "source": "e15ef665-b450-4377-ab19-73a9846168ff",
+      "target": "8ead44e4-2ce1-4d4a-9341-4034ca22880a",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__8ead44e4-2ce1-4d4a-9341-4034ca22880a-eb0c761a-2d90-4dfd-a22e-261e803b9e6c",
+      "source": "8ead44e4-2ce1-4d4a-9341-4034ca22880a",
+      "target": "eb0c761a-2d90-4dfd-a22e-261e803b9e6c",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    },
+    {
+      "id": "xy-edge__e15ef665-b450-4377-ab19-73a9846168ff-4b23652a-a0ae-43e3-8800-dbdcee709652",
+      "source": "e15ef665-b450-4377-ab19-73a9846168ff",
+      "target": "4b23652a-a0ae-43e3-8800-dbdcee709652",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    }
+  ]
+}

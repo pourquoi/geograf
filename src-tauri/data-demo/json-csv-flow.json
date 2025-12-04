@@ -1,0 +1,50 @@
+{
+  "id": "bff9183f-35e9-4c3e-adfc-302088b0861f",
+  "name": "json to csv",
+  "nodes": [
+    {
+      "id": "ccc6b35a-ac62-4de9-9bbf-427b64a3bd03",
+      "data": {
+        "cache": true,
+        "format": {
+          "comma_delimiter": true,
+          "type": "Json"
+        },
+        "label": "People JSON",
+        "source": "https://microsoftedge.github.io/Demos/json-dummy-data/64KB.json"
+      },
+      "type": "SourceNode",
+      "position": {
+        "x": 696.9684874823292,
+        "y": 441.27231765077
+      }
+    },
+    {
+      "id": "da85581d-f0d8-43a8-ade3-29a21fb11b4b",
+      "data": {
+        "dest": "/Users/pourquoi/Downloads/ff.csv",
+        "format": {
+          "comma_delimiter": true,
+          "type": "Csv"
+        },
+        "label": "People CSV"
+      },
+      "type": "SinkNode",
+      "position": {
+        "x": 1596.3899219356274,
+        "y": 486.96423751803366
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "xy-edge__ccc6b35a-ac62-4de9-9bbf-427b64a3bd03-da85581d-f0d8-43a8-ade3-29a21fb11b4b",
+      "source": "ccc6b35a-ac62-4de9-9bbf-427b64a3bd03",
+      "target": "da85581d-f0d8-43a8-ade3-29a21fb11b4b",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "type": "CustomEdge",
+      "data": null
+    }
+  ]
+}

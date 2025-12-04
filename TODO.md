@@ -1,0 +1,20 @@
+- [x] project export
+- [x] project import
+- [x] project duplicate
+- [x] live syntax check
+- [x] add sink limit option
+- [x] json / jsonl format
+- [ ] lazy json/csv writer for large datasets
+- [ ] lazy datatable
+- [x] dont send node execution message when no diagnostic
+- [x] network io
+- [ ] factor cache logic
+- [x] limit react rerender to one node
+- [x] parallel DFS execution
+- [ ] option to convert sources to parquet cache
+- [x] fix logical or
+- [x] remove flash on edit flow
+- [ ] delete cache on flow delete
+- [ ] show node name in toast + preview link
+- [ ] rename df to lf for lazyframes
+
