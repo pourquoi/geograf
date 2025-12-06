@@ -158,15 +158,13 @@ const JoinForm = ({
   const [showLogs, setShowLogs] = useState(false);
   const store = useFlowStore();
   const form = useForm({
-    defaultValues:
-      data ||
-      ({
-        label: "",
-        on: "",
-        left_on: "",
-        right_on: "",
-        how: "inner",
-      } as JoinNodeData),
+    defaultValues: (data || {
+      label: "",
+      on: "",
+      left_on: "",
+      right_on: "",
+      how: "inner",
+    }) as JoinNodeData,
     onSubmit: async ({ value, meta }) => {
       store.setNodes(
         store.nodes.map((n) => {
@@ -271,7 +269,7 @@ const JoinForm = ({
                       )}
                       id={field.name}
                       name={field.name}
-                      value={field.state.value}
+                      value={field.state.value || ""}
                       onChange={(e) =>
                         field.handleChange(e.currentTarget.value)
                       }

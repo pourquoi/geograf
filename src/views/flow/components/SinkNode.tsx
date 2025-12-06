@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/input-group";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DataFormat } from "@/bindings/DataFormat";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export type SinkNode = Node<SinkNodeData, "SinkNode">;
 
@@ -93,14 +94,14 @@ export default function SinkNode(props: NodeProps<SinkNode>) {
           <DialogHeader>
             <DialogTitle>Sink settings</DialogTitle>
           </DialogHeader>
-          <div className="w-full pt-5 h-full overflow-auto">
+          <ScrollArea className="max-h-[85vh] pt-5 overflow-y-auto overflow-x-visible flex-1 flex flex-col gap-2">
             <SinkForm
               id={props.id}
               data={props.data}
               onSubmit={() => setShowForm(false)}
               onCancel={() => setShowForm(false)}
             />
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </BaseNode>

@@ -38,6 +38,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useFlow } from "@/views/hub/hooks";
 import { DataFormat } from "@/bindings/DataFormat";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export type SourceNode = Node<SourceNodeData, "SourceNode">;
 
@@ -101,17 +102,20 @@ const SourceNode = (props: NodeProps<SourceNode>) => {
       <Footer nodeId={props.id} />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="">
+        <DialogContent className="sm:w-auto sm:max-w-[calc(100%-2rem)]">
           <DialogHeader>
             <DialogTitle>Source settings</DialogTitle>
           </DialogHeader>
-          <div className="w-full pt-5 h-full overflow-auto">
-            <SourceForm
-              id={props.id}
-              data={props.data}
-              onSubmit={() => setShowForm(false)}
-              onCancel={() => setShowForm(false)}
-            />
+          <div className="flex flex-row gap-8">
+            <ScrollArea className="max-h-[85vh] pt-5 overflow-y-auto overflow-x-visible flex-1 flex flex-col gap-2">
+              <SourceForm
+                className="flex-1 sm:w-[500px] sm:max-w-screen"
+                id={props.id}
+                data={props.data}
+                onSubmit={() => setShowForm(false)}
+                onCancel={() => setShowForm(false)}
+              />
+            </ScrollArea>
           </div>
         </DialogContent>
       </Dialog>

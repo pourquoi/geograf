@@ -5,15 +5,6 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 use tokio::sync::mpsc;
 use ts_rs::TS;
 
-use crate::{
-    flow::{
-        executor::{concat::ConcatNodeExecutor, describe::DescribeNodeExecutor},
-        reader::{NodeReadOutput, NodeReaderOptions},
-        Node, NodeType, DEFAULT_OUTPUT,
-    },
-    AppState,
-};
-
 mod concat;
 mod describe;
 mod error;
@@ -27,6 +18,8 @@ mod source;
 
 pub use error::*;
 
+use concat::ConcatNodeExecutor;
+use describe::DescribeNodeExecutor;
 use filter::FilterNodeExecutor;
 use groupby::GroupByNodeExecutor;
 use join::JoinNodeExecutor;
@@ -36,6 +29,12 @@ use sort::SortNodeExecutor;
 use source::SourceNodeExecutor;
 use uuid::Uuid;
 
+use crate::{
+    flow::{Node, NodeType, DEFAULT_OUTPUT},
+    reader::{NodeReadOutput, NodeReaderOptions},
+    AppState,
+};
+
 #[async_trait]
 pub trait NodeExecutor: Send + Sync {
     async fn load_cached(
@@ -43,6 +42,7 @@ pub trait NodeExecutor: Send + Sync {
         _state: Arc<AppState>,
         _options: Arc<NodeExecutorOptions>,
         _tx: mpsc::Sender<NodeExecutionMessage>,
+        _is_last: bool,
     ) -> Option<OutputMap> {
         None
     }
@@ -56,7 +56,7 @@ pub trait NodeExecutor: Send + Sync {
     ) -> Result<OutputMap, NodeExecutionError>;
 }
 
-struct RelayExecutor(NodeType);
+struct RelayExecutor;
 
 #[async_trait]
 impl NodeExecutor for RelayExecutor {
@@ -227,7 +227,7 @@ impl Node {
             Some(NodeType::SinkNode) => Ok(Box::new(SinkNodeExecutor::from_node(self)?)),
             Some(NodeType::ConcatNode) => Ok(Box::new(ConcatNodeExecutor::from_node(self)?)),
             Some(NodeType::DescribeNode) => Ok(Box::new(DescribeNodeExecutor::from_node(self)?)),
-            Some(other) => Ok(Box::new(RelayExecutor(other))),
+            Some(_other) => Ok(Box::new(RelayExecutor)),
             None => Err(NodeExecutionError::NodeTypeInvalid {
                 node_id: self.id.clone(),
                 node_type: "missing".into(),
@@ -241,9 +241,10 @@ pub async fn load_cached_execution(
     state: Arc<AppState>,
     options: Arc<NodeExecutorOptions>,
     tx: mpsc::Sender<NodeExecutionMessage>,
+    is_last: bool,
 ) -> Option<OutputMap> {
     let executor = node.executor().ok()?;
-    executor.load_cached(state, options, tx).await
+    executor.load_cached(state, options, tx, is_last).await
 }
 
 pub async fn execute_node(
@@ -330,7 +331,7 @@ pub async fn execute_node(
                 ts: ts(),
             });
 
-            HashMap::new()
+            HashMap::from([(DEFAULT_OUTPUT.to_string(), NodeExecutionOutput::error(err))])
         }
     };
 

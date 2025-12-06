@@ -17,7 +17,7 @@ const FlowView = () => {
       ) : null}
       {showHubOverlay &&
         createPortal(
-          <div className="fixed z-205 top-0 left-0 w-screen h-screen bg-background">
+          <div className="fixed z-205 top-0 left-0 w-screen h-dvh bg-background">
             <HubView
               onClose={() => setShowHubOverlay(false)}
               onSwitch={() => setShowHubOverlay(false)}

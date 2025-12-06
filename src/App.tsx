@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 
 function App() {
   return (
-    <main className="flex flex-row bg-background text-foreground dark h-screen w-full">
+    <main className="flex flex-row bg-background text-foreground dark h-dvh w-full">
       <Outlet />
     </main>
   );

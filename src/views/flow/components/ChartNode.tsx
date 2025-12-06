@@ -49,6 +49,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { ChartNodeData } from "@/bindings/ChartNodeData";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const xAxisName: { [key: string]: string } = {
   bar: "X Column",
@@ -141,15 +142,17 @@ const BarChartNode = (props: NodeProps<ChartNode>) => {
           <DialogHeader>
             <DialogTitle>Chart settings</DialogTitle>
           </DialogHeader>
-          <div className="w-full pt-5 h-full overflow-auto">
-            <BarChartNodeForm
-              className="flex-1 sm:w-[400px] sm:max-w-[400px]"
-              id={props.id}
-              sourceId={sourceId}
-              data={props.data}
-              onSave={(values, close) => setShowForm(!close)}
-              onCancel={() => setShowForm(false)}
-            />
+          <div className="flex flex-row gap-8">
+            <ScrollArea className="max-h-[85vh] pt-5 overflow-y-auto overflow-x-visible flex-1 flex flex-col gap-2">
+              <BarChartNodeForm
+                className="flex-1 sm:w-[500px] sm:max-w-[700px]"
+                id={props.id}
+                sourceId={sourceId}
+                data={props.data}
+                onSave={(values, close) => setShowForm(!close)}
+                onCancel={() => setShowForm(false)}
+              />
+            </ScrollArea>
           </div>
         </DialogContent>
       </Dialog>

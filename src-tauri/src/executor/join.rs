@@ -5,14 +5,11 @@ use polars::prelude::*;
 use tokio::sync::mpsc;
 
 use crate::{
-    flow::{
-        executor::{
-            NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
-            NodeExecutorOptions,
-        },
-        node::JoinNodeData,
-        Node, DEFAULT_OUTPUT, JOIN_LEFT_INPUT, JOIN_RIGHT_INPUT,
+    executor::{
+        NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
+        NodeExecutorOptions,
     },
+    flow::{JoinNodeData, Node, DEFAULT_OUTPUT, JOIN_LEFT_INPUT, JOIN_RIGHT_INPUT},
     AppState,
 };
 
@@ -153,22 +150,22 @@ impl NodeExecutor for JoinNodeExecutor {
                     port: JOIN_LEFT_INPUT.to_string(),
                 })?;
 
-        let right_df =
+        let right_lf =
             right_input
                 .df
                 .as_ref()
                 .ok_or_else(|| NodeExecutionError::InputDataEmpty {
                     node_id: self.node_id.clone(),
                 })?;
-        let left_df = left_input
+        let left_lf = left_input
             .df
             .as_ref()
             .ok_or_else(|| NodeExecutionError::InputDataEmpty {
                 node_id: self.node_id.clone(),
             })?;
 
-        let df_out = left_df.clone().join(
-            right_df.clone(),
+        let lf_out = left_lf.clone().join(
+            right_lf.clone(),
             [self.left_on.clone()],
             [self.right_on.clone()],
             self.how.clone().into(),
@@ -176,7 +173,7 @@ impl NodeExecutor for JoinNodeExecutor {
 
         Ok(HashMap::from([(
             DEFAULT_OUTPUT.to_string(),
-            NodeExecutionOutput::success(df_out),
+            NodeExecutionOutput::success(lf_out),
         )]))
     }
 }

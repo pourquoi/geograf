@@ -1,22 +1,19 @@
-use crate::{
-    flow::{
-        executor::{
-            load_cached_execution, InputMap, NodeExecutionMessage, NodeExecutionOutput,
-            NodeExecutorOptions, OutputMap,
-        },
-        reader::{NodeReadOutput, NodeReader, NodeReaderOptions},
-        Flow, DEFAULT_OUTPUT,
-    },
-    AppState,
-};
 use anyhow::Context;
 use uuid::Uuid;
 
-use super::{Edge, Node};
 use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc, time::Instant};
 use tokio::{
     sync::{mpsc, Mutex},
     task::JoinSet,
+};
+
+use crate::{
+    executor::{
+        load_cached_execution, InputMap, NodeExecutionMessage, NodeExecutorOptions, OutputMap,
+    },
+    flow::{Edge, Flow, Node, DEFAULT_OUTPUT},
+    reader::{NodeReadOutput, NodeReaderOptions},
+    AppState,
 };
 
 #[derive(Debug, Clone)]
@@ -163,7 +160,7 @@ impl FlowGraph {
         self: Arc<Self>,
         state: Arc<AppState>,
         node_id: String,
-        cache: Arc<Mutex<HashMap<String, HashMap<String, NodeExecutionOutput>>>>,
+        cache: Arc<Mutex<HashMap<String, OutputMap>>>,
         options: Arc<NodeExecutorOptions>,
         tx: mpsc::Sender<NodeExecutionMessage>,
         root_node_id: String,
@@ -198,18 +195,21 @@ impl FlowGraph {
                 _ = tx.send(msg).await;
             }
 
-            if root_node_id != node_id {
-                if let Some(output) =
-                    load_cached_execution(node.as_ref(), state.clone(), options.clone(), tx.clone())
-                        .await
+            if let Some(output) = load_cached_execution(
+                node.as_ref(),
+                state.clone(),
+                options.clone(),
+                tx.clone(),
+                root_node_id.clone() == node_id,
+            )
+            .await
+            {
                 {
-                    {
-                        let mut guard = cache.lock().await;
-                        guard.insert(node_id.to_string(), output.clone());
-                    }
-
-                    return Ok(output);
+                    let mut guard = cache.lock().await;
+                    guard.insert(node_id.to_string(), output.clone());
                 }
+
+                return Ok(output);
             }
 
             let mut inputs_by_handle: InputMap = HashMap::new();
@@ -263,7 +263,7 @@ impl FlowGraph {
                 }
             }
 
-            let output = crate::flow::executor::execute_node(
+            let output = crate::executor::execute_node(
                 node.as_ref(),
                 state,
                 inputs_by_handle,
@@ -300,9 +300,9 @@ mod tests {
     use super::*;
     use crate::flow::Flow;
 
-    const FLOW_DUMMY: &str = include_str!("../../data-test/flow_test_unknown.json");
-    const FLOW_SELECT: &str = include_str!("../../data-test/flow_test_select.json");
-    const FLOW_JOIN: &str = include_str!("../../data-test/flow_test_join.json");
+    const FLOW_DUMMY: &str = include_str!("../data-test/flow_test_unknown.json");
+    const FLOW_SELECT: &str = include_str!("../data-test/flow_test_select.json");
+    const FLOW_JOIN: &str = include_str!("../data-test/flow_test_join.json");
 
     #[test]
     fn test_find_sinks() {
@@ -333,7 +333,7 @@ mod tests {
         let graph = FlowGraph::new("foo".to_string(), flow.nodes, flow.edges);
         let tempfile = NamedTempFile::new().unwrap();
         let state = Arc::new(AppState {
-            db: crate::db::Database::try_new(tempfile.path().to_path_buf(), true)
+            db: crate::repository::Database::try_new(tempfile.path().to_path_buf(), true)
                 .await
                 .unwrap(),
             graph: Arc::new(Mutex::new(Some(graph.clone()))),
@@ -361,7 +361,7 @@ mod tests {
         let graph = FlowGraph::new("foo".to_string(), flow.nodes, flow.edges);
         let tempfile = NamedTempFile::new().unwrap();
         let state = Arc::new(AppState {
-            db: crate::db::Database::try_new(tempfile.path().to_path_buf(), true)
+            db: crate::repository::Database::try_new(tempfile.path().to_path_buf(), true)
                 .await
                 .unwrap(),
             graph: Arc::new(Mutex::new(Some(graph.clone()))),
@@ -392,7 +392,7 @@ mod tests {
         let graph = FlowGraph::new("foo".to_string(), flow.nodes, flow.edges);
         let tempfile = NamedTempFile::new().unwrap();
         let state = Arc::new(AppState {
-            db: crate::db::Database::try_new(tempfile.path().to_path_buf(), true)
+            db: crate::repository::Database::try_new(tempfile.path().to_path_buf(), true)
                 .await
                 .unwrap(),
             graph: Arc::new(Mutex::new(Some(graph.clone()))),

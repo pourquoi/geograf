@@ -5,14 +5,11 @@ use polars::prelude::*;
 use tokio::sync::mpsc;
 
 use crate::{
-    flow::{
-        executor::{
-            NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
-            NodeExecutorOptions,
-        },
-        node::FilterNodeData,
-        Node, DEFAULT_INPUT, DEFAULT_OUTPUT,
+    executor::{
+        NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
+        NodeExecutorOptions,
     },
+    flow::{FilterNodeData, Node, DEFAULT_INPUT, DEFAULT_OUTPUT},
     AppState,
 };
 
@@ -80,18 +77,18 @@ impl NodeExecutor for FilterNodeExecutor {
                 port: DEFAULT_INPUT.to_string(),
             })?;
 
-        let df = input
+        let lf = input
             .df
             .as_ref()
             .ok_or_else(|| NodeExecutionError::InputDataEmpty {
                 node_id: self.node_id.clone(),
             })?;
 
-        let df_out = df.clone().filter(self.expr.clone());
+        let lf_out = lf.clone().filter(self.expr.clone());
 
         Ok(HashMap::from([(
             DEFAULT_OUTPUT.to_string(),
-            NodeExecutionOutput::success(df_out),
+            NodeExecutionOutput::success(lf_out),
         )]))
     }
 }

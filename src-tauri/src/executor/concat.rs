@@ -4,14 +4,11 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::mpsc;
 
 use crate::{
-    flow::{
-        executor::{
-            NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
-            NodeExecutorOptions,
-        },
-        node::ConcatNodeData,
-        Node, CONCAT_FIRST_INPUT, CONCAT_SECOND_INPUT, DEFAULT_OUTPUT,
+    executor::{
+        NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
+        NodeExecutorOptions,
     },
+    flow::{ConcatNodeData, Node, CONCAT_FIRST_INPUT, CONCAT_SECOND_INPUT, DEFAULT_OUTPUT},
     AppState,
 };
 
@@ -69,14 +66,14 @@ impl NodeExecutor for ConcatNodeExecutor {
                     port: CONCAT_SECOND_INPUT.to_string(),
                 })?;
 
-        let first_df =
+        let first_lf =
             first_input
                 .df
                 .as_ref()
                 .ok_or_else(|| NodeExecutionError::InputDataEmpty {
                     node_id: self.node_id.clone(),
                 })?;
-        let second_df =
+        let second_lf =
             second_input
                 .df
                 .as_ref()
@@ -84,7 +81,7 @@ impl NodeExecutor for ConcatNodeExecutor {
                     node_id: self.node_id.clone(),
                 })?;
 
-        let lfs = vec![first_df.clone(), second_df.clone()];
+        let lfs = vec![first_lf.clone(), second_lf.clone()];
 
         let lf_out = if self.horizontal {
             polars::prelude::concat_lf_horizontal(lfs, UnionArgs::default())?

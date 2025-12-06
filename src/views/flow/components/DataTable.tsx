@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useState } from "react";
+import React, { memo, useContext, useEffect, useMemo, useState } from "react";
 
 import {
   ColumnDef,
@@ -24,11 +24,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { LuExternalLink } from "react-icons/lu";
+import { LuChevronDown, LuChevronUp, LuExternalLink } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_READ_OPTIONS, SYNTAX_CHECK_DELAY } from "../constants";
 import { useForm } from "@tanstack/react-form";
-import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { Label } from "@radix-ui/react-label";
@@ -68,10 +67,16 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import {
+  cheatsheetContext,
   CheatsheetContext,
   CheatsheetContextTrigger,
   CheatsheetProvider,
 } from "./Cheatsheet";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export const DataValueDisplay = ({ value }: { value: any }) => {
   if (value === null) {
@@ -236,27 +241,7 @@ export const DataTableDialog = memo(({ nodeId }: { nodeId: string }) => {
     manualPagination: true,
     manualSorting: true,
   });
-
-  const form = useForm({
-    defaultValues: {
-      filter: options.filter || "",
-      select: options.select || [""],
-    },
-    onSubmit: async (values) => {
-      setOptions({
-        ...options,
-        filter: values.value.filter || null,
-        select: values.value.select?.filter((s) => s) || [],
-      });
-    },
-  });
-
-  useEffect(() => {
-    if (!nodeId || !flow || !open) {
-      setOptions(DEFAULT_READ_OPTIONS);
-      form.reset();
-    }
-  }, [nodeId, open, options]);
+  console.log(open, flow);
 
   return (
     <>
@@ -273,173 +258,21 @@ export const DataTableDialog = memo(({ nodeId }: { nodeId: string }) => {
 
       <CheatsheetProvider>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="!max-w-screen sm:max-w-[calc(100%-2rem)] h-screen">
+          <DialogContent className="!max-w-screen sm:max-w-[calc(100%-2rem)] h-dvh">
+            <DialogHeader>
+              {!!open && !!flow && (
+                <FilterForm
+                  options={options}
+                  nodeId={nodeId}
+                  flow={flow}
+                  setOptions={setOptions}
+                  isFetching={isFetching}
+                />
+              )}
+            </DialogHeader>
+
             <div className="flex overflow-hidden flex-row gap-4">
               <div className="flex flex-1 flex-col overflow-auto">
-                <DialogHeader>
-                  <DialogTitle>Data explorer</DialogTitle>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      form.handleSubmit();
-                    }}
-                    className="grid grid-cols-[2fr_2fr_minmax(0,1fr)] gap-2 gap-x-4 mb-4  rounded-md p-2"
-                    style={{
-                      gridTemplateColumns:
-                        "minmax(0, 1fr) minmax(0, 1fr) min-content",
-                    }}
-                  >
-                    <form.Field
-                      name="filter"
-                      validators={{
-                        onChangeAsync: async ({ value }) => {
-                          if (value) return await checkSyntax(value);
-                        },
-                        onChangeAsyncDebounceMs: SYNTAX_CHECK_DELAY,
-                      }}
-                      children={(field) => (
-                        <div className="flex flex-col">
-                          <Label className="mb-2 inline-flex items-center gap-2">
-                            {React.createElement(nodeIcons["FilterNode"])}
-                            Filter
-                          </Label>
-                          <InputGroup>
-                            <InputGroupAddon align="inline-end">
-                              <CheatsheetContextTrigger />
-                            </InputGroupAddon>
-                            <InputGroupInput
-                              id={field.name}
-                              name={field.name}
-                              className={cn(
-                                "w-full font-mono",
-                                field.state.meta.errors.length > 0 &&
-                                  "rounded-b-none",
-                              )}
-                              value={field.state.value}
-                              onChange={(e) =>
-                                field.handleChange(e.currentTarget.value)
-                              }
-                              onBlur={field.handleBlur}
-                              autoComplete="off"
-                              autoCorrect="off"
-                              autoCapitalize="off"
-                            />
-                          </InputGroup>
-                          {field.state.meta.errors.length > 0 && (
-                            <div className="text-red-500 bg-black text-xs font-mono whitespace-pre overflow-x-auto">
-                              {field.state.meta.errors.join(", ")}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    />
-                    <form.Field
-                      name="select"
-                      children={(field) => (
-                        <div className="flex flex-col gap-2">
-                          <Label className="inline-flex items-center gap-2">
-                            {React.createElement(nodeIcons["SelectNode"])}
-                            Select
-                          </Label>
-                          {field.state.value.map((expr, i) => (
-                            <form.Field
-                              key={i}
-                              name={`select[${i}]`}
-                              validators={{
-                                onChangeAsync: async ({ value }) => {
-                                  if (value) return await checkSyntax(value);
-                                },
-                                onChangeAsyncDebounceMs: SYNTAX_CHECK_DELAY,
-                              }}
-                              children={(subField) => (
-                                <div
-                                  key={i}
-                                  className="grid grid-cols-[1fr_min-content] w-full flex-row gap-2 gap-y-0 items-center"
-                                >
-                                  <InputGroup>
-                                    <InputGroupAddon align="inline-end">
-                                      <CheatsheetContextTrigger />
-                                    </InputGroupAddon>
-                                    <InputGroupInput
-                                      type="text"
-                                      className={cn(
-                                        "w-full font-mono",
-                                        subField.state.meta.errors.length > 0 &&
-                                          "rounded-b-none",
-                                      )}
-                                      value={expr}
-                                      onChange={(e) =>
-                                        subField.handleChange(
-                                          e.currentTarget.value,
-                                        )
-                                      }
-                                      onBlur={field.handleBlur}
-                                      autoComplete="off"
-                                      autoCorrect="off"
-                                      autoCapitalize="off"
-                                    />
-                                  </InputGroup>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    type="button"
-                                    onClick={() => field.removeValue(i)}
-                                  >
-                                    -
-                                  </Button>
-                                  {subField.state.meta.errors.length > 0 && (
-                                    <div className="text-red-500 bg-black text-xs font-mono whitespace-pre overflow-x-auto">
-                                      {subField.state.meta.errors.join(", ")}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            />
-                          ))}
-                          <div className="flex justify-start">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              onClick={() => field.pushValue("")}
-                            >
-                              + add select
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    />
-                    <form.Subscribe
-                      selector={(state) => [
-                        state.canSubmit,
-                        state.isSubmitting,
-                      ]}
-                      children={([canSubmit, isSubmitting]) => (
-                        <div className="flex self-end flex-row gap-2 justify-end">
-                          <Button
-                            variant="ghost"
-                            type="button"
-                            onClick={() => {
-                              setOptions(DEFAULT_READ_OPTIONS);
-                              form.reset();
-                            }}
-                          >
-                            Reset
-                          </Button>
-                          <Button
-                            type="submit"
-                            disabled={!canSubmit}
-                            className="btn btn-primary"
-                          >
-                            {isSubmitting || isFetching ? <Spinner /> : "Apply"}
-                          </Button>
-                        </div>
-                      )}
-                    />
-                  </form>
-                </DialogHeader>
-
                 {!error && (
                   <Table>
                     <TableHeader>
@@ -604,3 +437,211 @@ export const DataTableDialog = memo(({ nodeId }: { nodeId: string }) => {
     </>
   );
 });
+
+const FilterForm = ({
+  options,
+  nodeId,
+  flow,
+  setOptions,
+  isFetching,
+}: {
+  options: NodeReaderOptions;
+  nodeId: string;
+  flow: string;
+  setOptions: (options: NodeReaderOptions) => void;
+  isFetching: boolean;
+}) => {
+  const [open, setOpen] = useState(false);
+  const form = useForm({
+    defaultValues: {
+      filter: options.filter || "",
+      select: options.select || [""],
+    },
+    onSubmit: async (values) => {
+      setOptions({
+        ...options,
+        filter: values.value.filter || null,
+        select: values.value.select?.filter((s) => s) || [],
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (!nodeId || !flow) {
+      setOptions(DEFAULT_READ_OPTIONS);
+      form.reset();
+    }
+  }, [nodeId, options]);
+
+  const cheatsheet = useContext(cheatsheetContext);
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={(open) => {
+        if (!open) cheatsheet.setOpen(false);
+        setOpen(open);
+      }}
+    >
+      <DialogTitle className="items-center flex gap-4">
+        Data explorer
+        <CollapsibleTrigger>
+          <Button variant="outline">
+            Filter
+            {!open ? <LuChevronDown /> : <LuChevronUp />}
+          </Button>
+        </CollapsibleTrigger>
+      </DialogTitle>
+      <CollapsibleContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_min-content] gap-2 gap-x-4 mb-4  rounded-md p-2"
+          style={{}}
+        >
+          <form.Field
+            name="filter"
+            validators={{
+              onChangeAsync: async ({ value }) => {
+                if (value) return await checkSyntax(value);
+              },
+              onChangeAsyncDebounceMs: SYNTAX_CHECK_DELAY,
+            }}
+            children={(field) => (
+              <div className="flex flex-col">
+                <Label className="mb-2 inline-flex items-center gap-2">
+                  {React.createElement(nodeIcons["FilterNode"])}
+                  Filter
+                </Label>
+                <InputGroup>
+                  <InputGroupAddon align="inline-end">
+                    <CheatsheetContextTrigger />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    id={field.name}
+                    name={field.name}
+                    className={cn(
+                      "w-full font-mono",
+                      field.state.meta.errors.length > 0 && "rounded-b-none",
+                    )}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.currentTarget.value)}
+                    onBlur={field.handleBlur}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                  />
+                </InputGroup>
+                {field.state.meta.errors.length > 0 && (
+                  <div className="text-red-500 bg-black text-xs font-mono whitespace-pre overflow-x-auto">
+                    {field.state.meta.errors.join(", ")}
+                  </div>
+                )}
+              </div>
+            )}
+          />
+          <form.Field
+            name="select"
+            children={(field) => (
+              <div className="flex flex-col gap-2">
+                <Label className="inline-flex items-center gap-2">
+                  {React.createElement(nodeIcons["SelectNode"])}
+                  Select
+                </Label>
+                {field.state.value.map((expr, i) => (
+                  <form.Field
+                    key={i}
+                    name={`select[${i}]`}
+                    validators={{
+                      onChangeAsync: async ({ value }) => {
+                        if (value) return await checkSyntax(value);
+                      },
+                      onChangeAsyncDebounceMs: SYNTAX_CHECK_DELAY,
+                    }}
+                    children={(subField) => (
+                      <div
+                        key={i}
+                        className="grid grid-cols-[1fr_min-content] w-full flex-row gap-2 gap-y-0 items-center"
+                      >
+                        <InputGroup>
+                          <InputGroupAddon align="inline-end">
+                            <CheatsheetContextTrigger />
+                          </InputGroupAddon>
+                          <InputGroupInput
+                            type="text"
+                            className={cn(
+                              "w-full font-mono",
+                              subField.state.meta.errors.length > 0 &&
+                                "rounded-b-none",
+                            )}
+                            value={expr}
+                            onChange={(e) =>
+                              subField.handleChange(e.currentTarget.value)
+                            }
+                            onBlur={field.handleBlur}
+                            autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="off"
+                          />
+                        </InputGroup>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          onClick={() => field.removeValue(i)}
+                        >
+                          -
+                        </Button>
+                        {subField.state.meta.errors.length > 0 && (
+                          <div className="text-red-500 bg-black text-xs font-mono whitespace-pre overflow-x-auto">
+                            {subField.state.meta.errors.join(", ")}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  />
+                ))}
+                <div className="flex justify-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => field.pushValue("")}
+                  >
+                    + add select
+                  </Button>
+                </div>
+              </div>
+            )}
+          />
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+            children={([canSubmit, isSubmitting]) => (
+              <div className="flex self-end flex-row gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={() => {
+                    setOptions(DEFAULT_READ_OPTIONS);
+                    form.reset();
+                  }}
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className="btn btn-primary"
+                >
+                  {isSubmitting || isFetching ? <Spinner /> : "Apply"}
+                </Button>
+              </div>
+            )}
+          />
+        </form>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};

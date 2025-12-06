@@ -187,7 +187,7 @@ const ConcatForm = ({
                 <div className="flex items-center gap-3">
                   <Checkbox
                     id="horizontal"
-                    checked={field.state.value}
+                    checked={!!field.state.value}
                     onCheckedChange={(e) =>
                       field.handleChange(e === "indeterminate" ? true : !!e)
                     }

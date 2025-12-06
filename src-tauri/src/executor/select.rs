@@ -5,14 +5,11 @@ use polars::prelude::*;
 use tokio::sync::mpsc;
 
 use crate::{
-    flow::{
-        executor::{
-            NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
-            NodeExecutorOptions,
-        },
-        node::SelectNodeData,
-        Node, DEFAULT_INPUT, DEFAULT_OUTPUT,
+    executor::{
+        NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
+        NodeExecutorOptions,
     },
+    flow::{Node, SelectNodeData, DEFAULT_INPUT, DEFAULT_OUTPUT},
     AppState,
 };
 
@@ -90,26 +87,26 @@ impl NodeExecutor for SelectNodeExecutor {
                 port: DEFAULT_INPUT.to_string(),
             })?;
 
-        let df = input
+        let lf = input
             .df
             .as_ref()
             .ok_or_else(|| NodeExecutionError::InputDataEmpty {
                 node_id: self.node_id.clone(),
             })?;
 
-        let df_out = if !self.exprs.is_empty() {
+        let lf_out = if !self.exprs.is_empty() {
             if self.with_columns {
-                df.clone().with_columns(self.exprs.clone())
+                lf.clone().with_columns(self.exprs.clone())
             } else {
-                df.clone().select(self.exprs.clone())
+                lf.clone().select(self.exprs.clone())
             }
         } else {
-            df.clone()
+            lf.clone()
         };
 
         Ok(HashMap::from([(
             DEFAULT_OUTPUT.to_string(),
-            NodeExecutionOutput::success(df_out),
+            NodeExecutionOutput::success(lf_out),
         )]))
     }
 }

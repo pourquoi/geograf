@@ -5,14 +5,11 @@ use polars::prelude::*;
 use tokio::sync::mpsc;
 
 use crate::{
-    flow::{
-        executor::{
-            NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
-            NodeExecutorOptions,
-        },
-        node::GroupByNodeData,
-        Node, DEFAULT_INPUT, DEFAULT_OUTPUT,
+    executor::{
+        NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
+        NodeExecutorOptions,
     },
+    flow::{GroupByNodeData, Node, DEFAULT_INPUT, DEFAULT_OUTPUT},
     AppState,
 };
 
@@ -116,21 +113,21 @@ impl NodeExecutor for GroupByNodeExecutor {
                 port: DEFAULT_INPUT.to_string(),
             })?;
 
-        let df = input
+        let lf = input
             .df
             .as_ref()
             .ok_or_else(|| NodeExecutionError::InputDataEmpty {
                 node_id: self.node_id.clone(),
             })?;
 
-        let df_out = df
+        let lf_out = lf
             .clone()
             .group_by(self.exprs.clone())
             .agg(self.aggrs.clone());
 
         Ok(HashMap::from([(
             DEFAULT_OUTPUT.to_string(),
-            NodeExecutionOutput::success(df_out),
+            NodeExecutionOutput::success(lf_out),
         )]))
     }
 }

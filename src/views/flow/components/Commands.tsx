@@ -103,7 +103,7 @@ const Commands = ({ ...props }: ComponentProps<"div">) => {
   return (
     <div {...props}>
       <InputGroup
-        className="!bg-slate-950"
+        className="!bg-slate-950 pointer-events-auto"
         onClick={() => setOpen((open) => !open)}
       >
         <InputGroupInput placeholder="Add a node..." />

@@ -1,6 +1,44 @@
-use super::{Edge, Flow, Node};
+use std::{env, fs, path::PathBuf};
 use sqlx::prelude::FromRow;
 use sqlx::types::Json;
+use crate::flow::{Edge, Flow, Node};
+
+#[derive(Clone)]
+pub struct Database {
+    pub db: sqlx::SqlitePool,
+}
+
+impl Database {
+    pub async fn try_new(db_path: PathBuf, reset: bool) -> anyhow::Result<Self> {
+        let parent_dir = db_path.parent().unwrap();
+        std::fs::create_dir_all(parent_dir)?;
+
+        if reset {
+            println!("--- DELETING DATABASE ---");
+            fs::remove_file(&db_path).ok();
+            fs::remove_file(parent_dir.join("db.sqlite-shm")).ok();
+            fs::remove_file(parent_dir.join("db.sqlite-wal")).ok();
+        }
+
+        env::set_var("DATABASE_URL", format!("sqlite://{}", db_path.display()));
+
+        println!(
+            "--- DATABASE_URL ---\n{}",
+            env::var("DATABASE_URL").unwrap()
+        );
+
+        let connect_options = sqlx::sqlite::SqliteConnectOptions::new()
+            .filename(&db_path)
+            .create_if_missing(true)
+            .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
+
+        let pool = sqlx::SqlitePool::connect_with(connect_options).await?;
+
+        sqlx::migrate!("./migrations").run(&pool).await?;
+
+        Ok(Self { db: pool })
+    }
+}
 
 #[derive(FromRow)]
 pub struct FlowRecord {
@@ -43,7 +81,7 @@ pub async fn load_flow(state: &crate::AppState, id: &str) -> anyhow::Result<Flow
     Ok(record.into())
 }
 
-pub async fn save_flow(state: &crate::AppState, flow: &super::Flow) -> anyhow::Result<()> {
+pub async fn save_flow(state: &crate::AppState, flow: &Flow) -> anyhow::Result<()> {
     let existing = load_flow(state, &flow.id).await;
     let nodes = serde_json::to_string(&flow.nodes).unwrap();
     let edges = serde_json::to_string(&flow.edges).unwrap();
@@ -72,7 +110,7 @@ pub async fn save_flow(state: &crate::AppState, flow: &super::Flow) -> anyhow::R
     Ok(())
 }
 
-pub async fn delete(state: &crate::AppState, id: String) -> anyhow::Result<()> {
+pub async fn delete(state: &crate::AppState, id: &str) -> anyhow::Result<()> {
     sqlx::query!("DELETE FROM flow WHERE id = ?", id)
         .execute(&state.db.db)
         .await?;

@@ -1,28 +1,27 @@
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 use polars::prelude::*;
-use std::{collections::HashMap, sync::Arc};
 use tokio::sync::mpsc;
 
 use crate::{
-    flow::{
-        executor::{
-            NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
-            NodeExecutorOptions,
-        },
-        node::DescribeNodeData,
-        Node, DEFAULT_INPUT, DEFAULT_OUTPUT,
+    executor::{
+        NodeExecutionError, NodeExecutionMessage, NodeExecutionOutput, NodeExecutor,
+        NodeExecutorOptions,
     },
+    flow::{Node, SortNodeData, DEFAULT_INPUT, DEFAULT_OUTPUT},
     AppState,
 };
 
-pub struct DescribeNodeExecutor {
+pub struct SortNodeExecutor {
     node_id: String,
-    config: DescribeNodeData,
+    by: Vec<PlSmallStr>,
+    ascending: Vec<bool>,
 }
 
-impl DescribeNodeExecutor {
+impl SortNodeExecutor {
     pub fn from_node(node: &Node) -> Result<Self, NodeExecutionError> {
-        let data: DescribeNodeData = serde_json::from_value(
+        let data: SortNodeData = serde_json::from_value(
             node.data
                 .as_ref()
                 .ok_or(NodeExecutionError::NodeConfigInvalid {
@@ -38,15 +37,19 @@ impl DescribeNodeExecutor {
             source: Some(Arc::new(e)),
         })?;
 
+        let by = data.by.iter().map(|by| by.name.clone().into()).collect();
+        let ascending = data.by.iter().map(|by| by.asc).collect();
+
         Ok(Self {
             node_id: node.id.clone(),
-            config: data,
+            by,
+            ascending,
         })
     }
 }
 
 #[async_trait]
-impl NodeExecutor for DescribeNodeExecutor {
+impl NodeExecutor for SortNodeExecutor {
     async fn execute(
         &self,
         _state: Arc<AppState>,
@@ -61,25 +64,21 @@ impl NodeExecutor for DescribeNodeExecutor {
                 port: DEFAULT_INPUT.to_string(),
             })?;
 
-        let df = input
+        let lf = input
             .df
             .as_ref()
             .ok_or_else(|| NodeExecutionError::InputDataEmpty {
                 node_id: self.node_id.clone(),
             })?;
 
-        let min = df.clone().min();
-        let max = df.clone().max();
-        let mean = df.clone().mean();
-        let std = df.clone().std(1);
-        let count = df.clone().count();
+        let desc_options = self.ascending.clone().into_iter().map(|asc| !asc);
+        let sort_options = SortMultipleOptions::new().with_order_descending_multi(desc_options);
 
-        Ok(HashMap::from([
-            ("min".to_string(), NodeExecutionOutput::success(min)),
-            ("max".to_string(), NodeExecutionOutput::success(max)),
-            ("mean".to_string(), NodeExecutionOutput::success(mean)),
-            ("std".to_string(), NodeExecutionOutput::success(std)),
-            ("count".to_string(), NodeExecutionOutput::success(count)),
-        ]))
+        let lf_out = lf.clone().sort(self.by.clone(), sort_options);
+
+        Ok(HashMap::from([(
+            DEFAULT_OUTPUT.to_string(),
+            NodeExecutionOutput::success(lf_out),
+        )]))
     }
 }

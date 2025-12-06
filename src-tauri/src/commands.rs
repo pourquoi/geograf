@@ -1,23 +1,25 @@
+use crate::{
+    demo::Demo,
+    expressions::{ast_to_expr, parse_program},
+    flow::Flow,
+};
 use std::{collections::HashMap, sync::Arc};
+
 use tauri_plugin_dialog::DialogExt;
 
 use tauri::Emitter;
-use tokio::sync::mpsc;
+use tokio::{sync::mpsc, task::JoinSet};
 
 use crate::{
-    flow::{
-        executor::{NodeExecutionMessage, NodeExecutionPreview, NodeExecutorOptions},
-        graph::FlowGraph,
-        reader::{NodeReadOutput, NodeReaderOptions},
-        Flow, DEFAULT_OUTPUT,
-    },
+    dag::FlowGraph,
+    demo::DEMOS,
+    executor::{NodeExecutionMessage, NodeExecutionPreview, NodeExecutorOptions},
+    reader::{NodeReadOutput, NodeReaderOptions},
     AppState,
 };
 
 #[tauri::command]
-pub async fn list_flows(
-    state: tauri::State<'_, crate::AppState>,
-) -> Result<Vec<super::Flow>, String> {
+pub async fn list_flows(state: tauri::State<'_, crate::AppState>) -> Result<Vec<Flow>, String> {
     let flows = super::repository::find_all(&state)
         .await
         .map_err(|e| e.to_string())?;
@@ -28,7 +30,7 @@ pub async fn list_flows(
 pub async fn load_flow(
     state: tauri::State<'_, crate::AppState>,
     id: String,
-) -> Result<super::Flow, String> {
+) -> Result<Flow, String> {
     let flow = super::repository::load_flow(&state, &id)
         .await
         .map_err(|e| e.to_string())?;
@@ -38,10 +40,7 @@ pub async fn load_flow(
 }
 
 #[tauri::command]
-pub async fn save_flow(
-    state: tauri::State<'_, crate::AppState>,
-    flow: super::Flow,
-) -> Result<(), String> {
+pub async fn save_flow(state: tauri::State<'_, crate::AppState>, flow: Flow) -> Result<(), String> {
     {
         let mut graph = state.graph.lock().map_err(|e| e.to_string())?;
         *graph = Some(flow.clone().into());
@@ -56,9 +55,19 @@ pub async fn delete_flow(
     state: tauri::State<'_, crate::AppState>,
     id: String,
 ) -> Result<(), String> {
-    super::repository::delete(&state, id)
+    let flow = super::repository::load_flow(&state, &id)
         .await
         .map_err(|e| e.to_string())?;
+
+    super::repository::delete(&state, &id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let state: Arc<AppState> = Arc::new((*state).clone());
+    flow.nodes.iter().for_each(|n| {
+        _ = crate::flow::delete_node_data(state.clone(), &id, n);
+    });
+
     Ok(())
 }
 
@@ -155,19 +164,24 @@ pub async fn execute_node(
         .execute_node(state, &node_id, Arc::new(options.clone()), tx)
         .await
         .map_err(|e| e.to_string())?;
-    let exec_result = exec_results.get(&node_id).ok_or("No result".to_string())?;
+    let node_exec_result = exec_results.get(&node_id).ok_or("No result".to_string())?;
+    let node_exec_result = node_exec_result.clone();
 
-    let mut previews = HashMap::new();
-    // todo parrallel
-    for (key, value) in exec_result.iter() {
-        let preview = value
-            .as_preview(options.page_size)
-            .await
-            .map_err(|e| e.to_string())?;
-        previews.insert(key.clone(), preview);
-    }
+    let tasks: JoinSet<_> = node_exec_result
+        .into_iter()
+        .map(|(id, exec_output)| async move {
+            let preview = exec_output
+                .as_preview(options.page_size)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok((id.clone(), preview))
+        })
+        .collect();
 
-    Ok(previews)
+    let results: Vec<anyhow::Result<(String, NodeExecutionPreview), String>> =
+        tasks.join_all().await;
+
+    results.into_iter().collect()
 }
 
 #[tauri::command]
@@ -208,8 +222,41 @@ pub async fn delete_node_data(
     let node = graph.nodes.get(&node_id).ok_or("Node not found")?;
 
     let state: Arc<AppState> = Arc::new((*state).clone());
-    super::node::delete_node_data(state, &id, (*node).as_ref()).map_err(|e| e.to_string())?;
+    crate::flow::delete_node_data(state, &id, (*node).as_ref()).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+pub async fn check_syntax(expr: String) -> Result<(), String> {
+    let ast = parse_program(&expr).map_err(|e| e.to_string())?;
+    let _expr = ast_to_expr(&ast).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn list_demos() -> Vec<Demo> {
+    DEMOS.to_vec()
+}
+
+#[tauri::command]
+pub async fn load_demo(
+    state: tauri::State<'_, crate::AppState>,
+    demo_name: String,
+    flow_name: String,
+) -> Result<String, String> {
+    let Some(demo) = DEMOS.iter().find(|d| d.name == demo_name) else {
+        return Err("Demo not found".to_string());
+    };
+
+    let mut flow: Flow = serde_json::from_str(&demo.flow).map_err(|e| e.to_string())?;
+    flow.id = uuid::Uuid::new_v4().to_string();
+    flow.name = flow_name;
+
+    save_flow(state, flow.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(flow.id)
 }
 
 async fn load_graph(id: &str, state: &tauri::State<'_, AppState>) -> Result<FlowGraph, String> {

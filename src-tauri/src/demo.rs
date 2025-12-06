@@ -1,8 +1,7 @@
-use crate::flow::{commands::save_flow, Flow};
 use ts_rs::TS;
 
 lazy_static::lazy_static! {
-    static ref DEMOS: Vec<Demo> = vec![
+    pub static ref DEMOS: Vec<Demo> = vec![
         Demo {
             name: "Titanic dataset".to_string(),
             flow: include_str!("../data-demo/titanic-flow.json").to_string(),
@@ -54,35 +53,10 @@ pub struct Demo {
     pub flow: String,
 }
 
-#[tauri::command]
-pub fn list_demos() -> Vec<Demo> {
-    DEMOS.to_vec()
-}
-
-#[tauri::command]
-pub async fn load_demo(
-    state: tauri::State<'_, crate::AppState>,
-    demo_name: String,
-    flow_name: String,
-) -> Result<String, String> {
-    let Some(demo) = DEMOS.iter().find(|d| d.name == demo_name) else {
-        return Err("Demo not found".to_string());
-    };
-
-    let mut flow: Flow = serde_json::from_str(&demo.flow).map_err(|e| e.to_string())?;
-    flow.id = uuid::Uuid::new_v4().to_string();
-    flow.name = flow_name;
-
-    save_flow(state, flow.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(flow.id)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::flow::Flow;
 
     #[test]
     fn test_demos_format() {

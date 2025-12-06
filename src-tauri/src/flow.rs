@@ -1,12 +1,77 @@
-use serde::{Deserialize, Serialize};
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::sync::Arc;
+
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
-use std::{
-    hash::{DefaultHasher, Hash, Hasher},
-    sync::Arc,
-};
+use sqlx::{prelude::Type, FromRow};
 use ts_rs::TS;
 
-use crate::{flow::Node, AppState};
+pub use crate::dag::FlowGraph;
+pub use crate::executor::OutputMap;
+use crate::AppState;
+
+pub const DEFAULT_INPUT: &str = "";
+pub const DEFAULT_OUTPUT: &str = "";
+
+pub const JOIN_RIGHT_INPUT: &str = "right";
+pub const JOIN_LEFT_INPUT: &str = "left";
+
+pub const CONCAT_FIRST_INPUT: &str = "first";
+pub const CONCAT_SECOND_INPUT: &str = "second";
+
+#[derive(Serialize, TS, Deserialize, Debug, Clone, FromRow)]
+#[ts(export)]
+pub struct Flow {
+    pub id: String,
+    pub name: String,
+    pub nodes: Vec<Node>,
+    pub edges: Vec<Edge>,
+}
+
+#[derive(Serialize, TS, Deserialize, Debug, Clone, Type)]
+#[ts(export)]
+pub struct Node {
+    pub id: String,
+    #[ts(type = "any")]
+    pub data: Option<Value>,
+    #[serde(rename = "type")]
+    pub node_type: Option<NodeType>,
+    pub position: NodePosition,
+}
+
+impl Node {
+    pub fn data_as<T: DeserializeOwned>(&self) -> Result<T, serde_json::Error> {
+        serde_json::from_value(self.data.clone().unwrap_or_default())
+    }
+}
+
+#[derive(Serialize, TS, Deserialize, Debug, Clone, Type)]
+#[ts(export)]
+pub struct NodePosition {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Serialize, TS, Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum EdgeType {
+    CustomEdge,
+    Unknown,
+}
+
+#[derive(Serialize, TS, Deserialize, Debug, Clone, Type)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct Edge {
+    pub id: String,
+    pub source: String,
+    pub target: String,
+    pub source_handle: Option<String>,
+    pub target_handle: Option<String>,
+    #[serde(rename = "type")]
+    pub edge_type: Option<EdgeType>,
+    #[ts(type = "any")]
+    pub data: Option<Value>,
+}
 
 #[derive(Serialize, TS, Deserialize, Debug, Clone, Copy, PartialEq, strum::Display, Default)]
 pub enum NodeType {
@@ -25,6 +90,17 @@ pub enum NodeType {
     Unknown,
 }
 
+#[derive(Serialize, TS, Deserialize, Debug, Clone, strum::Display)]
+#[ts(export)]
+#[serde(tag = "type")]
+#[strum(serialize_all = "lowercase")]
+pub enum DataFormat {
+    Json,
+    Jsonl,
+    Csv { comma_delimiter: bool },
+    Parquet,
+}
+
 macro_rules! node_data {
     ($($name:ident {$($field:ident: $ty:ty),*$(,)?})*) => {
         $(
@@ -36,17 +112,6 @@ macro_rules! node_data {
             }
         )*
     };
-}
-
-#[derive(Serialize, TS, Deserialize, Debug, Clone, strum::Display)]
-#[ts(export)]
-#[serde(tag = "type")]
-#[strum(serialize_all = "lowercase")]
-pub enum DataFormat {
-    Json,
-    Jsonl,
-    Csv { comma_delimiter: bool },
-    Parquet,
 }
 
 node_data! {
@@ -141,4 +206,17 @@ pub fn delete_node_data(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const FLOW_1: &str = include_str!("../data-test/flow_test_unknown.json");
+
+    #[test]
+    fn test_deserialize_flow() {
+        let flow = serde_json::from_str::<Flow>(FLOW_1);
+        assert!(flow.is_ok());
+    }
 }

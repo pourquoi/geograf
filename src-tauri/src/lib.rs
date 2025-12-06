@@ -10,14 +10,19 @@ use tokio::sync::RwLock;
 
 use crate::flow::OutputMap;
 
-mod db;
+mod commands;
+mod dag;
 mod demo;
+mod executor;
 mod expressions;
 mod flow;
+mod loader;
+mod reader;
+mod repository;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: db::Database,
+    pub db: repository::Database,
     pub graph: Arc<Mutex<Option<flow::FlowGraph>>>,
     pub app_dir: Option<PathBuf>,
     pub output_cache: Arc<RwLock<HashMap<String, OutputMap>>>,
@@ -53,7 +58,7 @@ pub fn run() {
             let reset = env::var("RESET_DB").is_ok_and(|v| v == "1");
 
             let db = tauri::async_runtime::block_on(async {
-                db::Database::try_new(db_path, reset).await
+                repository::Database::try_new(db_path, reset).await
             })?;
             app.manage(AppState {
                 db,
@@ -66,19 +71,19 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             pick_file,
             save_file,
-            flow::commands::list_flows,
-            flow::commands::load_flow,
-            flow::commands::save_flow,
-            flow::commands::delete_flow,
-            flow::commands::execute_node,
-            flow::commands::read_data,
-            flow::commands::delete_node_data,
-            flow::commands::export_flow,
-            flow::commands::import_flow,
-            flow::commands::duplicate_flow,
-            expressions::commands::check_syntax,
-            demo::list_demos,
-            demo::load_demo,
+            commands::list_flows,
+            commands::load_flow,
+            commands::save_flow,
+            commands::delete_flow,
+            commands::execute_node,
+            commands::read_data,
+            commands::delete_node_data,
+            commands::export_flow,
+            commands::import_flow,
+            commands::duplicate_flow,
+            commands::check_syntax,
+            commands::list_demos,
+            commands::load_demo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

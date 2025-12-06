@@ -121,13 +121,7 @@ export default function Flow({ onSwitch }: { onSwitch?: () => void }) {
 
   return (
     <>
-      <div
-        style={{
-          zIndex: 100,
-          width: "100vw",
-          height: "100vh",
-        }}
-      >
+      <div className="h-dvh w-screen z-100">
         <ReactFlow
           nodes={nodes as any}
           edges={edges as any}
@@ -139,10 +133,11 @@ export default function Flow({ onSwitch }: { onSwitch?: () => void }) {
           minZoom={0.01}
           fitView
         >
-          <div className="fixed z-200 pt-0 top-0 left-0 w-screen h-screen pointer-events-none">
-            <div className="grid grid-cols-3 items-center gap-2 p-2 justify-between relative pointer-events-auto">
-              <div className="flex items-center gap-2">
+          <div className="fixed z-200 pt-0 top-0 left-0 w-screen h-dvh pointer-events-none">
+            <div className="grid grid-cols-[min-content_1fr] md:grid-cols-3 items-center gap-2 p-2 justify-between relative ">
+              <div className="flex w-auto items-center gap-2">
                 <Button
+                  className="pointer-events-auto"
                   variant="ghost"
                   size="icon"
                   onClick={() => onSwitch?.()}
@@ -151,8 +146,8 @@ export default function Flow({ onSwitch }: { onSwitch?: () => void }) {
                 </Button>
                 <div className="text-lg mr-8"> {name}</div>
               </div>
-              <Commands className="mx-auto" />
-              <div className="invisible" />
+              <Commands className="mx-auto min-w-[200px]" />
+              <div className="hidden md:invisible" />
             </div>
           </div>
           <Background color="var(--foreground)" />

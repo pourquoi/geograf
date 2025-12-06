@@ -14,7 +14,8 @@
 - [ ] option to convert sources to parquet cache
 - [x] fix logical or
 - [x] remove flash on edit flow
-- [ ] delete cache on flow delete
+- [x] delete cache on flow delete
 - [ ] show node name in toast + preview link
 - [ ] rename df to lf for lazyframes
+- [ ] fix log queue when too rapid
 

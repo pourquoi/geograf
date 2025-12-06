@@ -2,26 +2,12 @@ use std::io::Cursor;
 
 use crate::{
     expressions::{ast_to_expr, parse_program, ExpressionError},
-    flow::{
-        node::{get_data_cache_path, DataFormat, NodeType, SinkNodeData, SourceNodeData},
-        Node, DEFAULT_OUTPUT,
-    },
-    AppState,
+    flow::DEFAULT_OUTPUT,
 };
 use polars::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::sync::Arc;
 use thiserror::Error;
 use ts_rs::TS;
-
-pub trait NodeReader: Send + Sync {
-    async fn load_lf(
-        &self,
-        state: Arc<AppState>,
-        options: &NodeReaderOptions,
-    ) -> Result<LazyFrame, NodeReadError>;
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -179,113 +165,6 @@ impl NodeReadOutput {
             columns: Some(schema),
             options: options.clone(),
         })
-    }
-}
-
-impl NodeReader for Node {
-    async fn load_lf(
-        &self,
-        state: Arc<AppState>,
-        _options: &NodeReaderOptions,
-    ) -> Result<LazyFrame, NodeReadError> {
-        let Some(node_type) = self.node_type else {
-            return Err(NodeReadError::NodeTypeInvalid {
-                node_id: self.id.clone(),
-            });
-        };
-
-        match node_type {
-            NodeType::SourceNode | NodeType::SinkNode => {}
-            _ => {
-                return Err(NodeReadError::NodeTypeInvalid {
-                    node_id: self.id.clone(),
-                })
-            }
-        }
-
-        let (source, format) = match node_type {
-            NodeType::SourceNode => {
-                let data: SourceNodeData =
-                    self.data_as()
-                        .map_err(|e| NodeReadError::NodeConfigInvalid {
-                            node_id: self.id.clone(),
-                            message: e.to_string(),
-                        })?;
-                // todo: refactor (see executor::source, executor::sink)
-                let mut source = data.source.clone();
-                if data.source.starts_with("http://") || data.source.starts_with("https://") {
-                    let cache_path = get_data_cache_path(state.clone(), &data.source, &data.format);
-
-                    if data.cache && std::fs::metadata(&cache_path).is_ok() {
-                        source = cache_path;
-                    }
-                }
-                (source, data.format)
-            }
-            NodeType::SinkNode => {
-                let data: SinkNodeData =
-                    self.data_as()
-                        .map_err(|e| NodeReadError::NodeConfigInvalid {
-                            node_id: self.id.clone(),
-                            message: e.to_string(),
-                        })?;
-                (data.dest, data.format)
-            }
-            _ => {
-                return Err(NodeReadError::NodeTypeInvalid {
-                    node_id: self.id.clone(),
-                })
-            }
-        };
-
-        match format {
-            DataFormat::Csv { comma_delimiter } => {
-                let path = PlPath::from_string(source.clone());
-
-                // todo: pull from options
-                let df = LazyCsvReader::new(path)
-                    .with_has_header(true)
-                    .with_separator(if comma_delimiter { b',' } else { b';' })
-                    .with_truncate_ragged_lines(true)
-                    .with_encoding(CsvEncoding::LossyUtf8)
-                    .with_infer_schema_length(Some(1000))
-                    .with_ignore_errors(true)
-                    .finish()
-                    .map_err(NodeReadError::PolarsError)?;
-
-                Ok(df)
-            }
-            DataFormat::Json => {
-                let file =
-                    File::open(source.clone()).map_err(|e| NodeReadError::Custom(e.to_string()))?;
-
-                let df = JsonReader::new(file)
-                    .finish()
-                    .map_err(|e| NodeReadError::Custom(e.to_string()))?;
-                let df = df.lazy();
-
-                Ok(df)
-            }
-            DataFormat::Jsonl => {
-                let path = PlPath::from_string(source.clone());
-
-                let df = LazyJsonLineReader::new(path)
-                    .with_infer_schema_length(Some(1000.try_into().unwrap()))
-                    .with_ignore_errors(true)
-                    .finish()
-                    .map_err(NodeReadError::PolarsError)?;
-
-                Ok(df)
-            }
-            DataFormat::Parquet => {
-                let path = PlPath::from_string(source.clone());
-
-                let df = LazyFrame::scan_parquet(path, Default::default())
-                    .map_err(NodeReadError::PolarsError)?;
-
-                Ok(df)
-            }
-        }
     }
 }
 

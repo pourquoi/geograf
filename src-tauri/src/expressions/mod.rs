@@ -1,5 +1,4 @@
 mod ast;
-pub mod commands;
 mod converter;
 mod error;
 mod parser;

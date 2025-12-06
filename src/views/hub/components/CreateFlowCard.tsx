@@ -69,7 +69,7 @@ const CreateFlowCard = ({
   return (
     <form
       onSubmit={onSubmit}
-      className="py-4 self-center items-center flex flex-row gap-2"
+      className="py-4 self-center items-stretch md:items-center flex flex-col md:flex-row gap-2"
     >
       <form.Field
         name="name"
@@ -103,7 +103,7 @@ const CreateFlowCard = ({
             value={field.state.value}
             onValueChange={(e) => field.handleChange(e)}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Empty template" />
             </SelectTrigger>
 
@@ -127,13 +127,22 @@ const CreateFlowCard = ({
         children={([canSubmit, isSubmitting]) => (
           <>
             <Button
+              className="hidden md:block"
               variant="ghost"
               size="sm"
               type="submit"
               disabled={!canSubmit}
-              className="btn btn-primary"
             >
               {isSubmitting ? <Spinner /> : <LuPlus />}
+            </Button>
+
+            <Button
+              variant="outline"
+              className="block md:hidden btn btn-primary"
+              type="submit"
+              disabled={!canSubmit}
+            >
+              {isSubmitting ? <Spinner /> : "Create"}
             </Button>
           </>
         )}
