@@ -95,7 +95,7 @@ impl FlowGraph {
             .as_ref()
             .context("Empty data for node".to_string())?;
 
-        let output = NodeReadOutput::try_from_df(df.clone(), &options).await?;
+        let output = NodeReadOutput::try_from_lf(df.clone(), &options).await?;
         Ok(output)
     }
 
@@ -339,6 +339,7 @@ mod tests {
             graph: Arc::new(Mutex::new(Some(graph.clone()))),
             app_dir: None,
             output_cache: Default::default(),
+            uploads: Default::default(),
         });
         let options = Arc::new(NodeExecutorOptions::default());
         let (tx, _) = mpsc::channel::<NodeExecutionMessage>(100);
@@ -367,6 +368,7 @@ mod tests {
             graph: Arc::new(Mutex::new(Some(graph.clone()))),
             app_dir: None,
             output_cache: Default::default(),
+            uploads: Default::default(),
         });
         let options = Arc::new(NodeExecutorOptions::default());
         let (rx, _) = mpsc::channel::<NodeExecutionMessage>(100);
@@ -398,6 +400,7 @@ mod tests {
             graph: Arc::new(Mutex::new(Some(graph.clone()))),
             app_dir: None,
             output_cache: Default::default(),
+            uploads: Default::default(),
         });
         let options = Arc::new(NodeExecutorOptions::default());
         let (tx, _) = mpsc::channel::<NodeExecutionMessage>(100);

@@ -122,7 +122,7 @@ impl NodeExecutionOutput {
 
 impl NodeExecutionOutput {
     pub async fn as_preview(&self, limit: u32) -> anyhow::Result<NodeExecutionPreview> {
-        let df = &self.df;
+        let lf = &self.df;
         let errors = self
             .errors
             .clone()
@@ -130,7 +130,7 @@ impl NodeExecutionOutput {
             .map(|e| e.to_string())
             .collect();
 
-        let Some(df) = df else {
+        let Some(lf) = lf else {
             return Ok(NodeExecutionPreview {
                 output: None,
                 errors,
@@ -142,7 +142,7 @@ impl NodeExecutionOutput {
             ..Default::default()
         };
 
-        let output = NodeReadOutput::try_from_df(df.clone(), &read_options).await?;
+        let output = NodeReadOutput::try_from_lf(lf.clone(), &read_options).await?;
         let output = Some(output);
 
         Ok(NodeExecutionPreview { output, errors })

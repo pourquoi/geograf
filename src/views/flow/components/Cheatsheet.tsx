@@ -27,7 +27,10 @@ const Cheatsheet = memo(
     return (
       <div
         {...props}
-        className={cn("relative flex flex-col gap-2", props.className)}
+        className={cn(
+          "relative flex flex-col items-center gap-2",
+          props.className,
+        )}
       >
         <div className="flex gap-2 items-center">
           <Button variant="ghost" onClick={onClose}>
@@ -35,7 +38,7 @@ const Cheatsheet = memo(
           </Button>
           Cheatsheet
         </div>
-        <ScrollArea className="max-h-[calc(75vh)] rounded-md border p-4">
+        <ScrollArea className="max-h-dvh-safe-[85dvh] max-w-[calc(100vw-2rem)] w-auto flex flex-col rounded-md border-none p-4">
           <div className="flex flex-col gap-4">
             {doc.cheatsheet.map((cheat, i) => (
               <div key={i} className="flex flex-col gap-2 p-0">
@@ -54,7 +57,7 @@ const Cheatsheet = memo(
               </div>
             ))}
 
-            <Table>
+            <Table className="">
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-center" colSpan={2}>
@@ -67,9 +70,10 @@ const Cheatsheet = memo(
                   <TableRow key={i}>
                     <TableCell className="font-mono text-sm bg-muted/50">
                       {f.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {f.example}
+                      <br />
+                      <span className="text-muted-foreground text-xs">
+                        {f.example}
+                      </span>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -88,9 +92,10 @@ const Cheatsheet = memo(
                   <TableRow key={i}>
                     <TableCell className="font-mono text-sm bg-muted/50">
                       {f.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {f.example}
+                      <br />
+                      <span className="text-muted-foreground text-xs">
+                        {f.example}
+                      </span>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -116,13 +121,23 @@ export const cheatsheetContext = createContext<CheatsheetContext>({
 });
 export const CheatsheetProvider = ({
   children,
+  onOpenChange,
 }: {
   children: React.ReactNode;
+  onOpenChange?: (open: boolean) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const handleOpenChange = (open: boolean) => {
+    setOpen(open);
+    onOpenChange?.(open);
+  };
   return (
     <cheatsheetContext.Provider
-      value={{ open, setOpen, toggle: () => setOpen(!open) }}
+      value={{
+        open,
+        setOpen: handleOpenChange,
+        toggle: () => handleOpenChange(!open),
+      }}
     >
       {children}
     </cheatsheetContext.Provider>

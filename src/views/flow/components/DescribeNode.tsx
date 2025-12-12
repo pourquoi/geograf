@@ -282,7 +282,6 @@ const DescribeData = ({
     { ...DEFAULT_READ_OPTIONS, output: "count" },
     enabled,
   );
-  console.log(minData.data);
 
   return (
     <Table>

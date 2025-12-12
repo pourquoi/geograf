@@ -69,7 +69,7 @@ const CreateFlowCard = ({
   return (
     <form
       onSubmit={onSubmit}
-      className="py-4 self-center items-stretch md:items-center flex flex-col md:flex-row gap-2"
+      className="py-4 self-center w-auto self-stretch md:self-center items-stretch md:items-center md:flex grid grid-cols-[1fr_min-content] md:flex-row gap-2"
     >
       <form.Field
         name="name"
@@ -82,13 +82,14 @@ const CreateFlowCard = ({
         }}
         children={(field) => (
           <Input
+            className="col-span-2 md:col-span-1"
             ref={inputRef}
             id={field.name}
             name={field.name}
             value={field.state.value}
             onChange={(e) => field.handleChange(e.currentTarget.value)}
             onBlur={field.handleBlur}
-            placeholder="create new flow..."
+            placeholder="New flow..."
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
@@ -101,13 +102,14 @@ const CreateFlowCard = ({
           <Select
             name={field.name}
             value={field.state.value}
-            onValueChange={(e) => field.handleChange(e)}
+            onValueChange={(e) => field.handleChange(e === "empty" ? "" : e)}
           >
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Empty template" />
+            <SelectTrigger className="flex-1 w-auto md:w-[180px]">
+              <SelectValue placeholder="Empty Template" />
             </SelectTrigger>
 
             <SelectContent className="z-250">
+              <SelectItem value="empty">Empty Template</SelectItem>
               {demosGrouped.map((group) => (
                 <SelectGroup key={group.name}>
                   <SelectLabel>{group.name}</SelectLabel>

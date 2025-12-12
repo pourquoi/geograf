@@ -34,6 +34,7 @@ const DEFAULT_NODES_DATA: { [key in NodeType]: any } = {
   SinkNode: {
     label: "Sink",
     format: { type: "Parquet", comma_delimiter: true },
+    dest: "",
   },
   SelectNode: { label: "Select", exprs: [""], with_columns: false },
   FilterNode: { label: "Filter", expr: "" },
@@ -121,6 +122,7 @@ const Commands = ({ ...props }: ComponentProps<"div">) => {
         onOpenChange={setOpen}
         title="Add a node"
         description="Search for a node to add..."
+        className="!py-0"
       >
         <Command>
           <CommandInput placeholder="Add a node..." />

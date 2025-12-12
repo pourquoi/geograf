@@ -5,6 +5,7 @@ import { NodeReaderOptions } from "@/bindings/NodeReaderOptions";
 import { NodeReadOutput } from "@/bindings/NodeReadOutput";
 import { Flow } from "./bindings/Flow";
 import { Demo } from "./bindings/Demo";
+import { DataFormat } from "./bindings/DataFormat";
 
 export async function pickFile() {
   return await invoke<string>("pick_file");
@@ -14,16 +15,49 @@ export async function saveFile() {
   return await invoke<string>("save_file");
 }
 
+export async function hasNodeFile(flowId: string, nodeId: string) {
+  return await invoke<[string, DataFormat] | null>("has_node_file", {
+    flowId,
+    nodeId,
+  });
+}
+
+export async function openNodeFile(flowId: string, nodeId: string) {
+  return await invoke<string>("open_node_file", { flowId, nodeId });
+}
+
+export async function uploadFile(name: string, format: DataFormat, file: File) {
+  let path = await invoke<string>("upload_start", { name, format });
+
+  const CHUNK_SIZE = 1024 * 1024;
+  const total = file.size;
+  let offset = 0;
+
+  while (offset < total) {
+    const end = Math.min(offset + CHUNK_SIZE, total);
+
+    const slice = file.slice(offset, end);
+    const buf = new Uint8Array(await slice.arrayBuffer());
+
+    await invoke("upload_chunk", {
+      name,
+      data: [...buf],
+    });
+
+    offset = end;
+  }
+
+  await invoke<string>("upload_end", { name });
+
+  return path;
+}
+
 export async function getFlows() {
-  const res = await invoke<Flow[]>("list_flows");
-  console.log(res);
-  return res;
+  return await invoke<Flow[]>("list_flows");
 }
 
 export async function loadFlow(id: string) {
-  const res = await invoke<Flow>("load_flow", { id });
-  console.log(res);
-  return res;
+  return await invoke<Flow>("load_flow", { id });
 }
 
 export async function saveFlow(flow: Flow) {
@@ -71,14 +105,11 @@ export async function readData(
   nodeId: string,
   options?: NodeReaderOptions,
 ) {
-  console.log("read data", nodeId);
-  const res = await invoke<NodeReadOutput>("read_data", {
+  return await invoke<NodeReadOutput>("read_data", {
     id,
     nodeId,
     options,
   });
-  console.log(res);
-  return res;
 }
 
 export async function checkSyntax(expr: string) {

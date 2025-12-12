@@ -8,6 +8,8 @@ use std::sync::Arc;
 use thiserror::Error;
 
 pub trait Loader: Send + Sync {
+    fn has_local_file(&self, state: Arc<AppState>) -> bool;
+    fn get_local_path(&self, state: Arc<AppState>) -> Option<(String, DataFormat)>;
     async fn load_lf(&self, state: Arc<AppState>) -> Option<LazyFrame>;
 }
 
@@ -20,43 +22,73 @@ pub enum LoaderError {
 }
 
 impl Loader for Node {
-    async fn load_lf(&self, state: Arc<AppState>) -> Option<LazyFrame> {
-        let Some(node_type) = self.node_type else {
-            return None;
-        };
-
-        match node_type {
-            NodeType::SourceNode | NodeType::SinkNode => {}
-            _ => return None,
+    fn has_local_file(&self, state: Arc<AppState>) -> bool {
+        match self.get_local_path(state) {
+            Some((path, _)) => std::path::Path::new(&path).exists(),
+            None => false,
         }
+    }
 
-        let (source, format) = match node_type {
-            NodeType::SourceNode => {
+    fn get_local_path(&self, state: Arc<AppState>) -> Option<(String, DataFormat)> {
+        match self.node_type {
+            Some(NodeType::SourceNode) => {
                 let data: SourceNodeData = self.data_as().ok()?;
-                let mut source = data.source.clone();
+                let source = data.source.clone();
+                if source.is_empty() {
+                    return None;
+                }
+
                 if data.source.starts_with("http://") || data.source.starts_with("https://") {
                     let cache_path = get_data_cache_path(state.clone(), &data.source, &data.format);
 
                     if data.cache && std::fs::metadata(&cache_path).is_ok() {
-                        source = cache_path;
+                        Some((cache_path, data.format))
                     } else {
-                        return None;
+                        None
                     }
+                } else {
+                    Some((source, data.format))
                 }
-                (source, data.format)
             }
-            NodeType::SinkNode => {
+            Some(NodeType::SinkNode) => {
                 let data: SinkNodeData = self.data_as().ok()?;
-                (data.dest, data.format)
+                Some((
+                    get_node_file_path(state.clone(), &self.id, &data.format),
+                    data.format,
+                ))
             }
-            _ => return None,
-        };
+            _ => None,
+        }
+    }
 
-        load_local_lf(&source, &format).ok()
+    async fn load_lf(&self, state: Arc<AppState>) -> Option<LazyFrame> {
+        if let Some((source, format)) = self.get_local_path(state.clone()) {
+            load_local_lf(&source, &format).ok()
+        } else {
+            None
+        }
     }
 }
 
+pub fn get_node_file_path(state: Arc<AppState>, node_id: &str, format: &DataFormat) -> String {
+    let path = format!(
+        "{}/{}.{}",
+        state
+            .app_dir
+            .as_ref()
+            .unwrap()
+            .clone()
+            .into_os_string()
+            .to_str()
+            .unwrap(),
+        node_id,
+        format.to_string()
+    );
+    path
+}
+
 pub fn load_local_lf(source: &str, format: &DataFormat) -> Result<LazyFrame, LoaderError> {
+    println!("load_local_lf {} {}", source, format);
     match format {
         DataFormat::Csv { comma_delimiter } => {
             let path = PlPath::from_str(source);
@@ -100,4 +132,16 @@ pub fn load_local_lf(source: &str, format: &DataFormat) -> Result<LazyFrame, Loa
             Ok(df)
         }
     }
+}
+
+pub fn delete_node_data(
+    state: Arc<AppState>,
+    _project_id: &str,
+    node: &Node,
+) -> anyhow::Result<()> {
+    if let Some((path, _)) = node.get_local_path(state.clone()) {
+        _ = std::fs::remove_file(path);
+    }
+
+    Ok(())
 }

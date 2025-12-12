@@ -52,7 +52,7 @@ const FlowCard = ({
   onSelect?: () => void;
   onDelete?: () => void;
 }) => {
-  const { flow: currentFlow, switchFlow } = useFlow();
+  const { flow: currentFlow } = useFlow();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [nodes, setNodes] = useState<{ [key: string]: FlowNodeBadge }>({});
@@ -96,7 +96,10 @@ const FlowCard = ({
   return (
     <>
       <Card
-        className={cn("w-[300px]", flow.id === currentFlow && "border-white")}
+        className={cn(
+          "w-auto md:w-[300px]",
+          flow.id === currentFlow && "border-white",
+        )}
       >
         <CardHeader className="flex justify-between items-center">
           <CardTitle>{flow.name}</CardTitle>
@@ -188,24 +191,29 @@ const FlowCard = ({
               </div>
             </form>
           ) : (
-            <div className="grid grid-cols-2 gap-8 gap-y-2">
-              {Object.values(nodes).map((node) => (
-                <div
-                  key={node.label}
-                  className="flex gap-2 items-center justify-between"
-                >
-                  <div className="flex text-gray-500 gap-2 items-center">
-                    <node.icon className="w-5 h-5" />
-                    <span className="text-sm">{node.label}</span>
+            <>
+              <div className="grid grid-cols-2 gap-8 gap-y-2">
+                {Object.values(nodes).map((node) => (
+                  <div
+                    key={node.label}
+                    className="flex gap-2 items-center justify-between"
+                  >
+                    <div className="flex text-gray-500 gap-2 items-center">
+                      <node.icon className="w-5 h-5" />
+                      <span className="text-sm">{node.label}</span>
+                    </div>
+                    <span className="text-sm">{node.count}</span>
                   </div>
-                  <span className="text-sm">{node.count}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
         {!showForm && (
-          <CardFooter className="flex justify-end flex-row gap-2">
+          <CardFooter className="flex justify-between flex-row gap-2">
+            <div className="text-xs text-gray-500">
+              {new Date(flow.updated_at).toLocaleString()}
+            </div>
             <Button onClick={() => onSelect?.()}>
               Open <LuMoveRight />
             </Button>

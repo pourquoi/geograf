@@ -5,7 +5,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tauri::Manager;
-use tauri_plugin_dialog::DialogExt;
 use tokio::sync::RwLock;
 
 use crate::flow::OutputMap;
@@ -26,31 +25,21 @@ pub struct AppState {
     pub graph: Arc<Mutex<Option<flow::FlowGraph>>>,
     pub app_dir: Option<PathBuf>,
     pub output_cache: Arc<RwLock<HashMap<String, OutputMap>>>,
+    pub uploads: Arc<Mutex<HashMap<String, std::fs::File>>>,
 }
 
-#[tauri::command]
-async fn pick_file(app: tauri::AppHandle) -> Option<String> {
-    tokio::task::spawn_blocking(move || {
-        let file_path = app.dialog().file().blocking_pick_file();
-        file_path.map(|p| p.to_string())
-    })
-    .await
-    .unwrap()
-}
-
-#[tauri::command]
-async fn save_file(app: tauri::AppHandle) -> Option<String> {
-    tokio::task::spawn_blocking(move || {
-        let file_path = app.dialog().file().blocking_save_file();
-        file_path.map(|p| p.to_string())
-    })
-    .await
-    .unwrap()
+impl AppState {
+    pub fn from_tauri(state: tauri::State<'_, Self>) -> Arc<Self> {
+        Arc::new((*state).clone())
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let app_dir = app.path().app_data_dir()?;
@@ -65,12 +54,19 @@ pub fn run() {
                 graph: Arc::new(Mutex::new(None)),
                 app_dir: Some(app_dir),
                 output_cache: Default::default(),
+                uploads: Default::default(),
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            pick_file,
-            save_file,
+            commands::pick_file,
+            commands::save_file,
+            commands::open_node_file,
+            commands::has_node_file,
+            commands::stream_file,
+            commands::upload_start,
+            commands::upload_chunk,
+            commands::upload_end,
             commands::list_flows,
             commands::load_flow,
             commands::save_flow,

@@ -1,6 +1,6 @@
 import { NodeExecutionMessage } from "@/bindings/NodeExecutionMessage";
 import { listen } from "@tauri-apps/api/event";
-import { RefObject, useEffect, useRef } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 import useFlowStore from "./store";
 import { toast } from "sonner";
 import { formatMicroseconds } from "@/lib/utils";
@@ -37,6 +37,39 @@ export const useMessageListener = () => {
       unlisten.then((unlisten) => unlisten());
     };
   }, []);
+};
+
+export const useLastNodeMessageListener = (nodeId: string) => {
+  const [lastMessage, setLastMessage] = useState<NodeExecutionMessage | null>(
+    null,
+  );
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const setLastMessageDebounced = (msg: NodeExecutionMessage) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      setLastMessage(msg);
+    }, 500);
+  };
+
+  useEffect(() => {
+    const unlisten = (async () => {
+      return await listen<NodeExecutionMessage>(
+        NODE_EXECUTION_MESSAGE_NAME,
+        async (event) => {
+          if (event.payload.node_id === nodeId) {
+            setLastMessageDebounced(event.payload);
+          }
+        },
+      );
+    })();
+    return () => {
+      unlisten.then((unlisten) => unlisten());
+    };
+  }, [nodeId]);
+
+  return lastMessage;
 };
 
 const NODE_DATA_KEY = "node_data";

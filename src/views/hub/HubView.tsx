@@ -24,10 +24,10 @@ const HubView = ({
   };
 
   return (
-    <div className="flex align-center align-center flex-col w-100 h-100 overflow-auto justify-center w-screen h-dvh p-4">
+    <div className="flex align-center align-center p-2 flex-col w-100 h-dvh overflow-auto justify-center w-screen md:p-4">
       <div className="flex flex-1 flex-col justify-center align-center">
         <CreateFlowCard onCreated={onSelectFlow} />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-2 mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-2 md:gap-2 md:p-2 md:mx-auto">
           {flows?.map((flow) => (
             <FlowCard
               key={flow.id}

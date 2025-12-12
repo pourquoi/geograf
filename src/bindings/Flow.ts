@@ -2,4 +2,4 @@
 import type { Edge } from "./Edge";
 import type { Node } from "./Node";
 
-export type Flow = { id: string, name: string, nodes: Array<Node>, edges: Array<Edge>, };
+export type Flow = { id: string, name: string, nodes: Array<Node>, edges: Array<Edge>, created_at: string, updated_at: string, };

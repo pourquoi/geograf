@@ -30,8 +30,8 @@ lazy_static::lazy_static! {
 
         Demo {
             name: "Describe dataset".to_string(),
-            flow: include_str!("../data-demo/concat-flow.json").to_string(),
-            description: "Concat 2 datasets".to_string(),
+            flow: include_str!("../data-demo/describe-flow.json").to_string(),
+            description: "Describe dataset".to_string(),
             category: DemoCategory::Stats,
         },
     ];

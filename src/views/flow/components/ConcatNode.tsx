@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import Header from "./Header";
 import Footer from "./Footer";
-import { CheatsheetContext, CheatsheetProvider } from "./Cheatsheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ExecutionLogs from "./ExecutionLogs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -78,27 +77,24 @@ const ConcatNode = (props: NodeProps<ConcatNode>) => {
       <LabeledHandle title="out" type="source" position={Position.Right} />
       <Footer nodeId={props.id} />
 
-      <CheatsheetProvider>
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="sm:w-auto sm:max-w-[calc(100%-2rem)]">
-            <DialogHeader>
-              <DialogTitle>Concat settings</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-row gap-8">
-              <ScrollArea className="max-h-[85vh] pt-5 overflow-y-auto overflow-x-visible flex-1 flex flex-col gap-2">
-                <ConcatForm
-                  className="flex-1 sm:w-[500px] sm:max-w-[700px]"
-                  id={props.id}
-                  data={props.data}
-                  onSave={(values, close) => setShowForm(!close)}
-                  onCancel={() => setShowForm(false)}
-                />
-              </ScrollArea>
-              <CheatsheetContext className="pl-12 flex-1" />
-            </div>
-          </DialogContent>
-        </Dialog>
-      </CheatsheetProvider>
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="sm:w-auto sm:max-w-[calc(100%-2rem)]">
+          <DialogHeader>
+            <DialogTitle>Concat settings</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-row gap-8">
+            <ScrollArea className="max-h-[85vh] pt-5 overflow-y-auto overflow-x-visible flex-1 flex flex-col gap-2">
+              <ConcatForm
+                className="flex-1 sm:w-[500px] sm:max-w-[700px]"
+                id={props.id}
+                data={props.data}
+                onSave={(values, close) => setShowForm(!close)}
+                onCancel={() => setShowForm(false)}
+              />
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
     </BaseNode>
   );
 };

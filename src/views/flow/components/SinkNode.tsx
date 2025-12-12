@@ -1,6 +1,6 @@
 import { NodeProps, Node, Position } from "@xyflow/react";
 import useFlowStore from "../store";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,11 +8,10 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 import { BaseNode, BaseNodeContent } from "@/components/base-node";
-import { saveFile } from "@/commands";
 import { LabeledHandle } from "@/components/labeled-handle";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { cn, middleTruncate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,15 +26,11 @@ import { useForm } from "@tanstack/react-form";
 import Header from "./Header";
 import Footer from "./Footer";
 import { Label } from "@/components/ui/label";
-import { LuFolderSearch, LuPencil } from "react-icons/lu";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { LuPencil } from "react-icons/lu";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DataFormat } from "@/bindings/DataFormat";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { deleteNodeData } from "@/commands";
 
 export type SinkNode = Node<SinkNodeData, "SinkNode">;
 
@@ -44,9 +39,14 @@ export default function SinkNode(props: NodeProps<SinkNode>) {
 
   const store = useFlowStore();
 
-  const onDelete = () => {
+  const onDelete = useCallback(async () => {
+    try {
+      await deleteNodeData(store.id!, props.id);
+    } catch (e) {
+      console.error(e);
+    }
     store.deleteNode(props.id);
-  };
+  }, [store.id, props.id]);
 
   const isInputConnectable = !store.edges.find((e) => e.target === props.id);
 
@@ -59,6 +59,7 @@ export default function SinkNode(props: NodeProps<SinkNode>) {
         showTable={true}
         onEdit={() => setShowForm(true)}
         onDelete={() => onDelete()}
+        showFile={true}
       />
       <LabeledHandle
         title="in"
@@ -67,15 +68,13 @@ export default function SinkNode(props: NodeProps<SinkNode>) {
         isConnectable={isInputConnectable}
       />
       <BaseNodeContent>
-        {props.data.dest ? (
-          <div className="text-xs grid gap-2 grid-cols-[min-content_1fr] gap-y-0">
-            <div className="text-muted-foreground">Dest</div>
-            <div className="font-mono">
-              {middleTruncate(props.data.dest, 30)}
+        {props.data.format ? (
+          <>
+            <div className="text-xs grid gap-2 grid-cols-[min-content_1fr] gap-y-0">
+              <div className="text-muted-foreground">Type</div>
+              <div className="font-mono">{props.data.format.type}</div>
             </div>
-            <div className="text-muted-foreground">Type</div>
-            <div className="font-mono">{props.data.format.type}</div>
-          </div>
+          </>
         ) : (
           <Button
             className="mx-2"
@@ -108,6 +107,8 @@ export default function SinkNode(props: NodeProps<SinkNode>) {
   );
 }
 
+type SinkFormValue = Omit<SinkNodeData, "options">;
+
 const SinkForm = ({
   id,
   onSubmit,
@@ -123,22 +124,21 @@ const SinkForm = ({
   const store = useFlowStore();
   const form = useForm({
     defaultValues:
-      data ||
+      (data as SinkFormValue) ||
       ({
         label: "",
         format: { type: "Csv", comma_delimiter: true },
         dest: "",
         limit: null,
-      } as Omit<SinkNodeData, "options">),
+      } as SinkFormValue),
     onSubmit: async (value) => {
+      let data = { ...value.value, dest: "", file: undefined };
       store.setNodes(
         store.nodes.map((n) => {
           if (n.id === id) {
             return {
               ...n,
-              data: {
-                ...value.value,
-              },
+              data,
             };
           } else {
             return n;
@@ -147,6 +147,7 @@ const SinkForm = ({
       );
       await store.save();
       onSubmit(value.value as SinkNodeData);
+      await store.run(id);
     },
   });
 
@@ -178,46 +179,6 @@ const SinkForm = ({
                   autoCorrect="off"
                   autoCapitalize="off"
                 />
-              </Field>
-            )}
-          />
-          <form.Field
-            name="dest"
-            children={(field) => (
-              <Field>
-                <FieldLabel>Destination</FieldLabel>
-                <div className="flex items-center gap-2">
-                  <InputGroup>
-                    <InputGroupAddon align="inline-end">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={async () => {
-                          const file = await saveFile();
-                          if (file) {
-                            field.handleChange(file);
-                          }
-                        }}
-                      >
-                        <LuFolderSearch />
-                      </Button>
-                    </InputGroupAddon>
-                    <InputGroupInput
-                      className="font-mono"
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(e.currentTarget.value)
-                      }
-                      onBlur={field.handleBlur}
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                    />
-                  </InputGroup>
-                </div>
               </Field>
             )}
           />

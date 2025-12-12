@@ -2,14 +2,32 @@ import { useRef, type ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 import { useDebugRender } from "@/views/flow/hooks";
+import { useReactFlow } from "@xyflow/react";
 
 export function BaseNode({ className, ...props }: ComponentProps<"div">) {
   const debugRef = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition, fitBounds } = useReactFlow();
   useDebugRender(debugRef);
+
+  const zoomNode = (e: React.MouseEvent<HTMLDivElement>) => {
+    console.log("zoomNode");
+    const node = e.currentTarget.closest(".react-flow__node");
+    if (!node) return;
+    const nodeId = node.getAttribute("data-node-id");
+    if (!nodeId) return;
+    const nodePosition = screenToFlowPosition(
+      e.currentTarget.getBoundingClientRect(),
+    );
+    fitBounds(
+      { x: nodePosition.x, y: nodePosition.y, width: 300, height: 200 },
+      { duration: 300, padding: 0.2 },
+    );
+  };
 
   return (
     <div
       ref={debugRef}
+      onDoubleClick={zoomNode}
       className={cn(
         "bg-card text-card-foreground relative rounded-md border",
         "hover:ring-1",

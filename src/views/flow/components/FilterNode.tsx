@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/input-group";
 import { ScrollArea } from "@radix-ui/react-scroll-area";
 import ExecutionLogs from "./ExecutionLogs";
+import { cheatsheetContext } from "./Cheatsheet";
 
 type FilterNodeData = {
   label: string;
@@ -41,6 +42,7 @@ type FilterNodeData = {
 export type FilterNode = Node<FilterNodeData, "FilterNode">;
 
 const FilterNode = (props: NodeProps<FilterNode>) => {
+  const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const store = useFlowStore();
 
   const [showForm, setShowForm] = useState(false);
@@ -89,27 +91,39 @@ const FilterNode = (props: NodeProps<FilterNode>) => {
 
       <Footer nodeId={props.id} />
 
-      <CheatsheetProvider>
+      <cheatsheetContext.Provider
+        value={{
+          open: cheatsheetOpen,
+          setOpen: setCheatsheetOpen,
+          toggle: () => setCheatsheetOpen(!cheatsheetOpen),
+        }}
+      >
         <Dialog open={showForm} onOpenChange={setShowForm} modal={false}>
           <DialogContent className="sm:w-auto sm:max-w-[calc(100%-2rem)]">
             <DialogHeader>
               <DialogTitle>Source settings</DialogTitle>
             </DialogHeader>
-            <div className="flex flex-row gap-8">
-              <ScrollArea className="max-h-[85vh] pt-5 overflow-y-auto overflow-x-visible flex-1 flex flex-col gap-2">
-                <FilterForm
-                  className="flex-1 sm:w-[500px] sm:max-w-[700px]"
-                  id={props.id}
-                  data={props.data}
-                  onSave={(values, close) => setShowForm(!close)}
-                  onCancel={() => setShowForm(false)}
-                />
-              </ScrollArea>
-              <CheatsheetContext className="pl-12 flex-1" />
-            </div>
+            <ScrollArea
+              className={cn(
+                "max-h-dvh-safe-[85dvh] max-w-screen pt-2 overflow-y-auto overflow-x-visible flex-1 flex flex-col md:gap-2",
+              )}
+            >
+              <FilterForm
+                className="flex-1 sm:w-[500px] sm:max-w-[700px]"
+                id={props.id}
+                data={props.data}
+                onSave={(values, close) => setShowForm(!close)}
+                onCancel={() => setShowForm(false)}
+              />
+            </ScrollArea>
+            <Dialog open={cheatsheetOpen} onOpenChange={setCheatsheetOpen}>
+              <DialogContent className="px-0 sm:px-6">
+                <CheatsheetContext />
+              </DialogContent>
+            </Dialog>
           </DialogContent>
         </Dialog>
-      </CheatsheetProvider>
+      </cheatsheetContext.Provider>
     </BaseNode>
   );
 };

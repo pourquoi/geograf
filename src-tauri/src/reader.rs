@@ -69,7 +69,7 @@ pub struct NodeReadColumn {
 }
 
 impl NodeReadOutput {
-    pub async fn try_from_df(
+    pub async fn try_from_lf(
         df: LazyFrame,
         options: &NodeReaderOptions,
     ) -> Result<Self, NodeReadError> {
@@ -107,11 +107,11 @@ impl NodeReadOutput {
             None
         };
 
-        let (data, total, schema) = tokio::task::spawn_blocking({
+        let task = tokio::task::spawn_blocking({
             let options = options.clone();
             move || {
                 let total = df.clone().count().collect()?;
-                let total = total[0].u32()?.get(0).unwrap();
+                let total = total[0].u32()?.get(0).expect("Could not extract total");
 
                 let mut df = df.clone();
                 if let Some(select) = select {
@@ -150,9 +150,11 @@ impl NodeReadOutput {
                 Ok((data, total, schema))
             }
         })
-        .await
-        .unwrap()
-        .map_err(NodeReadError::PolarsError)?;
+        .await;
+
+        let (data, total, schema) = task
+            .map_err(|e| NodeReadError::Custom(e.to_string()))?
+            .map_err(NodeReadError::PolarsError)?;
 
         let data =
             serde_json::value::RawValue::from_string(String::from_utf8_lossy(&data).to_string())

@@ -21,11 +21,11 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite", "migrate", "json"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite", "migrate", "json", "chrono"] }
 anyhow = "1.0.100"
 ts-rs = { version = "11.1.0", features = ["serde-json-impl"] }
 tauri-plugin-dialog = "2"
-reqwest = { version = "0.12.24", features = ["stream"] }
+reqwest = { version = "0.12.24", default-features = false, features = ["http2", "charset", "system-proxy", "stream", "rustls-tls"] }
 encoding_rs = "0.8.35"
 strum = { version = "0.27.2", features = ["derive"] }
 itertools = "0.14.0"
@@ -40,6 +40,10 @@ lazy_static = "1.5.0"
 futures = "0.3.31"
 chrono = "0.4.42"
 futures-util = "0.3.31"
+tauri-plugin-fs = "2"
+tauri-plugin-os = "2"
+tauri-plugin-opener = "2"
+base64 = "0.22.1"
 
 [dev-dependencies]
 rstest = "0.26.1"

@@ -40,11 +40,8 @@ export function useDuplicateFlow(id: string) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      console.log("duplicate", id);
       const newId = await duplicateFlow(id);
-      console.log(newId);
       const flow = await loadFlow(newId);
-      console.log(flow);
       return flow;
     },
     onSuccess: (newFlow) => {
@@ -90,6 +87,8 @@ export function useFlowForm(flow?: Flow) {
       nodes: flow?.nodes || [],
       edges: flow?.edges || [],
       demo: "",
+      created_at: flow?.created_at || new Date().toISOString(),
+      updated_at: flow?.updated_at || new Date().toISOString(),
     },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync({

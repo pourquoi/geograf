@@ -1,7 +1,8 @@
-use std::{env, fs, path::PathBuf};
+use crate::flow::{Edge, Flow, Node};
+use chrono::NaiveDateTime;
 use sqlx::prelude::FromRow;
 use sqlx::types::Json;
-use crate::flow::{Edge, Flow, Node};
+use std::{env, fs, path::PathBuf};
 
 #[derive(Clone)]
 pub struct Database {
@@ -46,6 +47,8 @@ pub struct FlowRecord {
     pub name: String,
     pub nodes: Json<Vec<Node>>,
     pub edges: Json<Vec<Edge>>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl From<FlowRecord> for Flow {
@@ -55,6 +58,8 @@ impl From<FlowRecord> for Flow {
             name: record.name,
             nodes: record.nodes.0,
             edges: record.edges.0,
+            created_at: record.created_at.and_utc(),
+            updated_at: record.updated_at.and_utc(),
         }
     }
 }
@@ -62,7 +67,7 @@ impl From<FlowRecord> for Flow {
 pub async fn find_all(state: &crate::AppState) -> anyhow::Result<Vec<FlowRecord>> {
     let projects = sqlx::query_as!(
             FlowRecord, 
-            r#"SELECT id, name, nodes as "nodes: Json<Vec<Node>>", edges as "edges: Json<Vec<Edge>>" FROM flow"#,
+            r#"SELECT id, name, nodes as "nodes: Json<Vec<Node>>", edges as "edges: Json<Vec<Edge>>", created_at, updated_at FROM flow ORDER BY updated_at DESC"#,
         )
         .fetch_all(&state.db.db)
         .await?;
@@ -72,7 +77,7 @@ pub async fn find_all(state: &crate::AppState) -> anyhow::Result<Vec<FlowRecord>
 pub async fn load_flow(state: &crate::AppState, id: &str) -> anyhow::Result<Flow> {
     let record =    sqlx::query_as!(
         FlowRecord,
-        r#"SELECT id, name, nodes as "nodes: Json<Vec<Node>>", edges as "edges: Json<Vec<Edge>>" FROM flow WHERE id = ?"#,
+        r#"SELECT id, name, nodes as "nodes: Json<Vec<Node>>", edges as "edges: Json<Vec<Edge>>", created_at, updated_at FROM flow WHERE id = ?"#,
         id
     )
     .fetch_one(&state.db.db)
@@ -86,11 +91,13 @@ pub async fn save_flow(state: &crate::AppState, flow: &Flow) -> anyhow::Result<(
     let nodes = serde_json::to_string(&flow.nodes).unwrap();
     let edges = serde_json::to_string(&flow.edges).unwrap();
     if existing.is_ok() {
+        let updated_at = flow.updated_at.naive_utc();
         sqlx::query!(
-            "UPDATE flow SET name = ?, nodes = ?, edges = ? WHERE id = ?",
+            "UPDATE flow SET name = ?, nodes = ?, edges = ?, updated_at = ? WHERE id = ?",
             flow.name,
             nodes,
             edges,
+            updated_at,
             flow.id
         )
         .execute(&state.db.db)

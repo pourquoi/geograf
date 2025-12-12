@@ -1,6 +1,7 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
 
+use chrono::{DateTime, Utc};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{prelude::Type, FromRow};
@@ -26,6 +27,12 @@ pub struct Flow {
     pub name: String,
     pub nodes: Vec<Node>,
     pub edges: Vec<Edge>,
+    #[ts(type = "string")]
+    #[serde(default = "Utc::now")]
+    pub created_at: DateTime<Utc>,
+    #[ts(type = "string")]
+    #[serde(default = "Utc::now")]
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Serialize, TS, Deserialize, Debug, Clone, Type)]
@@ -174,38 +181,6 @@ where
         .join(format!("{}.{}", hash, format))
         .to_string_lossy()
         .to_string()
-}
-
-pub fn delete_node_data(
-    state: Arc<AppState>,
-    _project_id: &str,
-    node: &Node,
-) -> anyhow::Result<()> {
-    let mut to_delete = vec![];
-    match node.node_type {
-        Some(NodeType::SourceNode) => {
-            let data = node.data_as::<SourceNodeData>()?;
-            if data.source.starts_with("http://") || data.source.starts_with("https://") {
-                to_delete.push(get_data_cache_path(
-                    state.clone(),
-                    &data.source,
-                    &data.format,
-                ));
-                to_delete.push(get_data_cache_path(
-                    state.clone(),
-                    format!("{}.tmp.{}", data.source, data.format),
-                    &data.format,
-                ));
-            }
-        }
-        _ => {}
-    }
-
-    for path in to_delete {
-        _ = std::fs::remove_file(path);
-    }
-
-    Ok(())
 }
 
 #[cfg(test)]

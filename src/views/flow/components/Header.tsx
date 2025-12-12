@@ -19,7 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
 } from "@/components/ui/alert-dialog";
-import React, { memo, useCallback, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { BaseNodeHeader, BaseNodeHeaderTitle } from "@/components/base-node";
 import {
   NodeTypes,
@@ -33,7 +33,7 @@ import { useShallow } from "zustand/react/shallow";
 import { Spinner } from "@/components/ui/spinner";
 import { v4 as uuidv4 } from "uuid";
 import { NodeExecutorOptions } from "@/bindings/NodeExecutorOptions";
-import { executeNode } from "@/commands";
+import { executeNode, hasNodeFile, openNodeFile } from "@/commands";
 import { cn } from "@/lib/utils";
 import { DataTableDialog } from "./DataTable";
 import { AlertDialogTitle } from "@radix-ui/react-alert-dialog";
@@ -44,6 +44,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { NodeExecutionMessage } from "@/bindings/NodeExecutionMessage";
+import { useLastNodeMessageListener } from "../hooks";
+import { invoke } from "@tauri-apps/api/core";
+import { DataFormat } from "@/bindings/DataFormat";
+import { downloadStreamedFile } from "@/lib/download";
+import { platform } from "@tauri-apps/plugin-os";
+import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 
 type Props = {
   nodeId: string;
@@ -56,6 +62,7 @@ type Props = {
   showDuplicate?: boolean;
   showDebug?: boolean;
   showTable?: boolean;
+  showFile?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
@@ -73,6 +80,7 @@ const Header = ({
   showDuplicate = true,
   showTable = false,
   showDebug = false,
+  showFile = false,
   onRun,
   onEdit,
   onDelete,
@@ -80,6 +88,8 @@ const Header = ({
 }: Props) => {
   const { flow } = useFlow();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const lastMessage = useLastNodeMessageListener(nodeId);
+  const [file, setFile] = useState<[string, DataFormat] | null>(null);
 
   const { setCenter } = useReactFlow();
   const resetSelectedElements = useReactFlowStore(
@@ -143,6 +153,21 @@ const Header = ({
     getNode,
   ]);
 
+  useEffect(() => {
+    if (!showFile) {
+      return;
+    }
+    (async () => {
+      let hasFile = null;
+      try {
+        hasFile = await hasNodeFile(flow!, nodeId);
+      } catch (e) {
+        console.log(e);
+      }
+      setFile(hasFile);
+    })();
+  }, [showFile, nodeId, flow, lastMessage]);
+
   const run = async (debug: boolean) => {
     if (onRun) {
       onRun(debug);
@@ -154,6 +179,20 @@ const Header = ({
         page_size: 100,
       };
       await executeNode(flow, nodeId, options);
+    }
+  };
+
+  const downloadFile = async () => {
+    if (!file) return;
+    if (platform() === "android" || platform() === "ios") {
+      try {
+        await downloadStreamedFile(file[0]);
+      } catch (e) {
+        console.error(e);
+        alert(e);
+      }
+    } else {
+      revealItemInDir(file[0]);
     }
   };
 
@@ -244,6 +283,13 @@ const Header = ({
                       );
                     }
                   })}
+                  {showFile && file && (
+                    <DropdownMenuItem onClick={() => downloadFile()}>
+                      {platform() === "android" || platform() === "ios"
+                        ? "Download"
+                        : "Open"}
+                    </DropdownMenuItem>
+                  )}
                   {showDuplicate && (
                     <DropdownMenuItem onClick={() => duplicate()}>
                       Duplicate

@@ -27,11 +27,7 @@ import Footer from "./Footer";
 import { LuPencil } from "react-icons/lu";
 import { checkSyntax } from "@/commands";
 import { SYNTAX_CHECK_DELAY } from "../constants";
-import {
-  CheatsheetContext,
-  CheatsheetContextTrigger,
-  CheatsheetProvider,
-} from "./Cheatsheet";
+import { CheatsheetContext, CheatsheetContextTrigger } from "./Cheatsheet";
 import {
   InputGroup,
   InputGroupAddon,
@@ -40,12 +36,14 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ExecutionLogs from "./ExecutionLogs";
 import { JoinNodeData } from "@/bindings/JoinNodeData";
+import { cheatsheetContext } from "./Cheatsheet";
 
 type JoinType = "inner" | "left" | "right" | "full";
 
 export type JoinNode = Node<JoinNodeData, "JoinNode">;
 
 const JoinNode = (props: NodeProps<JoinNode>) => {
+  const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const store = useFlowStore();
 
   const [showForm, setShowForm] = useState(false);
@@ -118,27 +116,39 @@ const JoinNode = (props: NodeProps<JoinNode>) => {
       <LabeledHandle title="out" type="source" position={Position.Right} />
       <Footer nodeId={props.id} />
 
-      <CheatsheetProvider>
+      <cheatsheetContext.Provider
+        value={{
+          open: cheatsheetOpen,
+          setOpen: setCheatsheetOpen,
+          toggle: () => setCheatsheetOpen(!cheatsheetOpen),
+        }}
+      >
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="sm:w-auto sm:max-w-[calc(100%-2rem)]">
+          <DialogContent className="w-screen px-2 sm:px-6 max-w-screen sm:h-auto sm:rounded-lg sm:w-auto sm:max-w-[calc(100vw-2rem)]">
             <DialogHeader>
               <DialogTitle>Join settings</DialogTitle>
             </DialogHeader>
-            <div className="flex flex-row gap-8">
-              <ScrollArea className="max-h-[85vh] pt-5 overflow-y-auto overflow-x-visible flex-1 flex flex-col gap-2">
-                <JoinForm
-                  className="flex-1 sm:w-[500px] sm:max-w-[700px]"
-                  id={props.id}
-                  data={props.data}
-                  onSave={(values, close) => setShowForm(!close)}
-                  onCancel={() => setShowForm(false)}
-                />
-              </ScrollArea>
-              <CheatsheetContext className="pl-12 flex-1" />
-            </div>
+            <ScrollArea
+              className={cn(
+                "max-h-dvh-safe-[85dvh] max-w-screen pt-2 overflow-y-auto overflow-x-visible flex-1 flex flex-col md:gap-2",
+              )}
+            >
+              <JoinForm
+                className="flex-1 sm:w-[500px] sm:max-w-[700px]"
+                id={props.id}
+                data={props.data}
+                onSave={(values, close) => setShowForm(!close)}
+                onCancel={() => setShowForm(false)}
+              />
+            </ScrollArea>
+            <Dialog open={cheatsheetOpen} onOpenChange={setCheatsheetOpen}>
+              <DialogContent className="px-0 sm:px-6">
+                <CheatsheetContext />
+              </DialogContent>
+            </Dialog>
           </DialogContent>
         </Dialog>
-      </CheatsheetProvider>
+      </cheatsheetContext.Provider>
     </BaseNode>
   );
 };

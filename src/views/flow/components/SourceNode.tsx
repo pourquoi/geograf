@@ -1,6 +1,6 @@
-import { NodeProps, Node, Position } from "@xyflow/react";
+import { NodeProps, Node } from "@xyflow/react";
 import useFlowStore from "../store";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useContext, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 import { BaseNode, BaseNodeContent } from "@/components/base-node";
-import { deleteNodeData, pickFile } from "@/commands";
+import { deleteNodeData, pickFile, uploadFile } from "@/commands";
 import { LabeledHandle } from "@/components/labeled-handle";
 import { useForm } from "@tanstack/react-form";
 import { SourceNodeData } from "@/bindings/SourceNodeData";
@@ -39,10 +39,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useFlow } from "@/views/hub/hooks";
 import { DataFormat } from "@/bindings/DataFormat";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { platform } from "@tauri-apps/plugin-os";
+
+import { appConfigContext } from "@/providers";
 
 export type SourceNode = Node<SourceNodeData, "SourceNode">;
 
 const SourceNode = (props: NodeProps<SourceNode>) => {
+  const { config: appConfig } = useContext(appConfigContext);
   const { flow } = useFlow();
   const [showForm, setShowForm] = useState(false);
 
@@ -70,8 +74,8 @@ const SourceNode = (props: NodeProps<SourceNode>) => {
         onEdit={() => setShowForm(true)}
         onDelete={onDelete}
         showTable={true}
+        showFile={true}
       />
-      <LabeledHandle title="out" type="source" position={Position.Right} />
       <BaseNodeContent>
         {props.data.source ? (
           <div className="text-xs grid gap-2 grid-cols-[min-content_1fr] gap-y-0">
@@ -99,6 +103,11 @@ const SourceNode = (props: NodeProps<SourceNode>) => {
           </Button>
         )}
       </BaseNodeContent>
+      <LabeledHandle
+        title="out"
+        type="source"
+        position={appConfig.outputSide}
+      />
       <Footer nodeId={props.id} />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
@@ -125,6 +134,8 @@ const SourceNode = (props: NodeProps<SourceNode>) => {
 
 export default memo(SourceNode);
 
+type SourceFormValue = SourceNodeData & { file?: File };
+
 const SourceForm = ({
   id,
   onSubmit,
@@ -140,22 +151,31 @@ const SourceForm = ({
   const store = useFlowStore();
   const form = useForm({
     defaultValues:
-      data ||
+      (data as SourceFormValue) ||
       ({
         label: "",
         format: { type: "Csv", comma_delimiter: true },
         source: "",
         cache: false,
-      } as SourceNodeData),
+      } as SourceFormValue),
+    listeners: {
+      onChange: ({ formApi, fieldApi }) => {},
+    },
     onSubmit: async (value) => {
+      let data = { ...value.value, file: undefined };
+      if (value.value.file) {
+        data.source = await uploadFile(
+          id,
+          value.value.format,
+          value.value.file,
+        );
+      }
       store.setNodes(
         store.nodes.map((n) => {
           if (n.id === id) {
             return {
               ...n,
-              data: {
-                ...value.value,
-              },
+              data,
             };
           } else {
             return n;
@@ -172,6 +192,34 @@ const SourceForm = ({
     e.preventDefault();
     e.stopPropagation();
     form.handleSubmit();
+  };
+
+  const updateFormatOnSourceChange = (value: string) => {
+    let ext = value.toLocaleLowerCase().split(".").pop();
+    if (ext === "csv" && form.getFieldValue("format").type !== "Csv") {
+      form.setFieldValue("format", {
+        type: "Csv",
+        comma_delimiter: true,
+      });
+    } else if (ext === "json" && form.getFieldValue("format").type !== "Json") {
+      form.setFieldValue("format", {
+        type: "Json",
+      });
+    } else if (
+      ext === "jsonl" &&
+      form.getFieldValue("format").type !== "Jsonl"
+    ) {
+      form.setFieldValue("format", {
+        type: "Jsonl",
+      });
+    } else if (
+      ext === "parquet" &&
+      form.getFieldValue("format").type !== "Parquet"
+    ) {
+      form.setFieldValue("format", {
+        type: "Parquet",
+      });
+    }
   };
 
   return (
@@ -199,6 +247,31 @@ const SourceForm = ({
               </Field>
             )}
           />
+          {(platform() === "android" || platform() === "ios") && (
+            <form.Field
+              name="file"
+              children={(field) => (
+                <Field>
+                  <FieldLabel>File</FieldLabel>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      name={field.name}
+                      onChange={(e) => {
+                        if (!e.currentTarget.files?.length) {
+                          return;
+                        }
+                        field.handleChange(e.currentTarget.files[0]);
+                        updateFormatOnSourceChange(
+                          e.currentTarget.files[0].name,
+                        );
+                      }}
+                    />
+                  </div>
+                </Field>
+              )}
+            />
+          )}
           <form.Field
             name="source"
             children={(field) => (
@@ -206,29 +279,33 @@ const SourceForm = ({
                 <FieldLabel>Source</FieldLabel>
                 <div className="flex items-center gap-2">
                   <InputGroup>
-                    <InputGroupAddon align="inline-end">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={async () => {
-                          const file = await pickFile();
-                          if (file) {
-                            field.handleChange(file);
-                          }
-                        }}
-                      >
-                        <LuFolderSearch />
-                      </Button>
-                    </InputGroupAddon>
+                    {!(platform() === "android" || platform() === "ios") && (
+                      <InputGroupAddon align="inline-end">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={async () => {
+                            const file = await pickFile();
+                            if (file) {
+                              field.handleChange(file);
+                              updateFormatOnSourceChange(file);
+                            }
+                          }}
+                        >
+                          <LuFolderSearch />
+                        </Button>
+                      </InputGroupAddon>
+                    )}
                     <InputGroupInput
                       className="font-mono"
                       id={field.name}
                       name={field.name}
                       value={field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(e.currentTarget.value)
-                      }
+                      onChange={(e) => {
+                        field.handleChange(e.currentTarget.value);
+                        updateFormatOnSourceChange(e.currentTarget.value);
+                      }}
                       onBlur={field.handleBlur}
                       autoComplete="off"
                       autoCorrect="off"
@@ -359,12 +436,12 @@ const SourceForm = ({
                 <Select
                   name={field.name}
                   value={field.state.value.type}
-                  onValueChange={(e) =>
+                  onValueChange={(e) => {
                     field.handleChange({
                       ...field.state.value,
                       type: e,
-                    } as DataFormat)
-                  }
+                    } as DataFormat);
+                  }}
                 >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select the format" />

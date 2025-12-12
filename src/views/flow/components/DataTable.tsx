@@ -70,13 +70,13 @@ import {
   cheatsheetContext,
   CheatsheetContext,
   CheatsheetContextTrigger,
-  CheatsheetProvider,
 } from "./Cheatsheet";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const DataValueDisplay = ({ value }: { value: any }) => {
   if (value === null) {
@@ -124,6 +124,7 @@ export const DataValueDisplay = ({ value }: { value: any }) => {
 export const DataTableDialog = memo(({ nodeId }: { nodeId: string }) => {
   const { flow } = useFlow();
   const [open, setOpen] = useState(false);
+  const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
 
   const [options, setOptions] =
     useState<NodeReaderOptions>(DEFAULT_READ_OPTIONS);
@@ -241,7 +242,6 @@ export const DataTableDialog = memo(({ nodeId }: { nodeId: string }) => {
     manualPagination: true,
     manualSorting: true,
   });
-  console.log(open, flow);
 
   return (
     <>
@@ -256,9 +256,15 @@ export const DataTableDialog = memo(({ nodeId }: { nodeId: string }) => {
         </Tooltip>
       </Button>
 
-      <CheatsheetProvider>
+      <cheatsheetContext.Provider
+        value={{
+          open: cheatsheetOpen,
+          setOpen: setCheatsheetOpen,
+          toggle: () => setCheatsheetOpen(!cheatsheetOpen),
+        }}
+      >
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="!max-w-screen sm:max-w-[calc(100%-2rem)] h-dvh">
+          <DialogContent className="flex flex-col w-screen px-2 sm:px-6 max-w-screen sm:h-auto sm:rounded-lg sm:w-auto sm:max-w-screen">
             <DialogHeader>
               {!!open && !!flow && (
                 <FilterForm
@@ -269,75 +275,77 @@ export const DataTableDialog = memo(({ nodeId }: { nodeId: string }) => {
                   isFetching={isFetching}
                 />
               )}
+              <Dialog open={cheatsheetOpen} onOpenChange={setCheatsheetOpen}>
+                <DialogContent className="px-0 sm:px-6">
+                  <CheatsheetContext className="mt-6 max-w-[500px] flex-1" />
+                </DialogContent>
+              </Dialog>
             </DialogHeader>
 
-            <div className="flex overflow-hidden flex-row gap-4">
-              <div className="flex flex-1 flex-col overflow-auto">
-                {!error && (
-                  <Table>
-                    <TableHeader>
-                      {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => {
-                            return (
-                              <TableHead key={header.id}>
-                                {header.isPlaceholder
-                                  ? null
-                                  : flexRender(
-                                      header.column.columnDef.header,
-                                      header.getContext(),
-                                    )}
-                              </TableHead>
-                            );
-                          })}
+            <div className="flex overflow-auto flex-1 flex-col overflow-auto">
+              {!error && (
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => {
+                          return (
+                            <TableHead key={header.id}>
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext(),
+                                  )}
+                            </TableHead>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableCell>
+                          ))}
                         </TableRow>
-                      ))}
-                    </TableHeader>
-                    <TableBody>
-                      {table.getRowModel().rows?.length ? (
-                        table.getRowModel().rows.map((row) => (
-                          <TableRow key={row.id}>
-                            {row.getVisibleCells().map((cell) => (
-                              <TableCell key={cell.id}>
-                                {flexRender(
-                                  cell.column.columnDef.cell,
-                                  cell.getContext(),
-                                )}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={columnsDef.length}
-                            className="h-24 text-center"
-                          >
-                            {isLoading ? "Loading..." : "No results"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columnsDef.length}
+                          className="h-24 text-center"
+                        >
+                          {isLoading ? "Loading..." : "No results"}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
 
-                {!!error && (
-                  <Alert
-                    variant="destructive"
-                    className="w-auto mx-auto self-start"
-                  >
-                    <AlertCircleIcon />
-                    <AlertTitle>Error reading data</AlertTitle>
-                    <AlertDescription>
-                      <p>{error.toString()}</p>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-              <CheatsheetContext className="mt-6 max-w-[500px] flex-1" />
+              {!!error && (
+                <Alert
+                  variant="destructive"
+                  className="w-auto mx-auto self-start"
+                >
+                  <AlertCircleIcon />
+                  <AlertTitle>Error reading data</AlertTitle>
+                  <AlertDescription>
+                    <p>{error.toString()}</p>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
             {data?.data && (
-              <DialogFooter className="flex sm:flex-row sm:justify-between text-sm">
+              <DialogFooter className="flex flex-1 sm:flex-row sm:justify-between text-sm">
                 <div className="text-sm">
                   Showing {table.getRowModel().rows.length.toLocaleString()} of{" "}
                   {data?.total.toLocaleString()} Rows
@@ -433,7 +441,7 @@ export const DataTableDialog = memo(({ nodeId }: { nodeId: string }) => {
             )}
           </DialogContent>
         </Dialog>
-      </CheatsheetProvider>
+      </cheatsheetContext.Provider>
     </>
   );
 });
@@ -474,6 +482,7 @@ const FilterForm = ({
   }, [nodeId, options]);
 
   const cheatsheet = useContext(cheatsheetContext);
+
   return (
     <Collapsible
       open={open}
@@ -498,7 +507,9 @@ const FilterForm = ({
             e.stopPropagation();
             form.handleSubmit();
           }}
-          className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_min-content] gap-2 gap-x-4 mb-4  rounded-md p-2"
+          className={cn(
+            "grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_min-content] gap-2 gap-x-4 mb-4  rounded-md p-2",
+          )}
           style={{}}
         >
           <form.Field

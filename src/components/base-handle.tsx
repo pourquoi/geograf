@@ -14,12 +14,12 @@ export function BaseHandle({
     <Handle
       {...props}
       className={cn(
-        "dark:border-secondary dark:bg-secondary h-[20px] w-[20px] rounded-full border border-slate-300 bg-slate-100 transition",
+        "dark:border-secondary dark:bg-secondary h-[50px] w-[50px] rounded-full border border-slate-300 bg-slate-100 transition",
         className,
       )}
       style={{
-        minWidth: "10px",
-        minHeight: "10px",
+        minWidth: "20px",
+        minHeight: "20px",
       }}
     >
       {children}

@@ -42,7 +42,7 @@ impl SinkNodeExecutor {
 
         Ok(Self {
             node: Box::new(node.clone()),
-            dest: data.dest,
+            dest: data.dest.clone(),
             format: data.format,
             limit: data.limit,
             cache: true,
@@ -84,11 +84,26 @@ impl NodeExecutor for SinkNodeExecutor {
 
     async fn execute(
         &self,
-        _state: Arc<AppState>,
+        state: Arc<AppState>,
         inputs: &super::InputMap,
         options: Arc<NodeExecutorOptions>,
         tx: mpsc::Sender<NodeExecutionMessage>,
     ) -> Result<super::OutputMap, NodeExecutionError> {
+        let dest: String;
+        dest = format!(
+            "{}/{}.{}",
+            state
+                .app_dir
+                .as_ref()
+                .unwrap()
+                .clone()
+                .into_os_string()
+                .to_str()
+                .unwrap(),
+            self.node.id,
+            self.format.to_string()
+        );
+
         let input = inputs
             .get(DEFAULT_INPUT)
             .ok_or_else(|| NodeExecutionError::InputNotFound {
@@ -120,7 +135,7 @@ impl NodeExecutor for SinkNodeExecutor {
                 let mut lf_out = lf_out?;
 
                 let mut file =
-                    File::create(self.dest.clone()).map_err(|e| NodeExecutionError::IoError {
+                    File::create(dest.clone()).map_err(|e| NodeExecutionError::IoError {
                         node_id: self.node.id.clone(),
                         message: e.to_string(),
                     })?;
@@ -144,7 +159,7 @@ impl NodeExecutor for SinkNodeExecutor {
                 let mut lf_out = lf_out?;
 
                 let mut file =
-                    File::create(self.dest.clone()).map_err(|e| NodeExecutionError::IoError {
+                    File::create(dest.clone()).map_err(|e| NodeExecutionError::IoError {
                         node_id: self.node.id.clone(),
                         message: e.to_string(),
                     })?;
@@ -160,7 +175,7 @@ impl NodeExecutor for SinkNodeExecutor {
                 lf_out
             }
             DataFormat::Parquet => {
-                let path = PlPath::from_string(self.dest.clone());
+                let path = PlPath::from_string(dest.clone());
                 let lf = lf.clone();
                 let lf_out = tokio::task::spawn_blocking(move || {
                     let lf = lf.sink_parquet(
@@ -183,7 +198,7 @@ impl NodeExecutor for SinkNodeExecutor {
                 node_id: self.node.id.clone(),
                 run_id: options.run_id.clone(),
                 ts: options.run_start.elapsed().as_micros(),
-                message: format!("saved to {}", self.dest),
+                message: format!("saved to {}", dest),
             })
             .await;
 

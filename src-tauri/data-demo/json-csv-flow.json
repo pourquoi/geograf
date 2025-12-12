@@ -22,7 +22,7 @@
     {
       "id": "da85581d-f0d8-43a8-ade3-29a21fb11b4b",
       "data": {
-        "dest": "/Users/pourquoi/Downloads/ff.csv",
+        "dest": "",
         "format": {
           "comma_delimiter": true,
           "type": "Csv"
@@ -48,3 +48,4 @@
     }
   ]
 }
+

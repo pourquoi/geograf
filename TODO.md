@@ -8,14 +8,27 @@
 - [ ] lazy datatable
 - [x] dont send node execution message when no diagnostic
 - [x] network io
-- [ ] factor cache logic
+- [x] factor cache logic
 - [x] limit react rerender to one node
 - [x] parallel DFS execution
 - [ ] option to convert sources to parquet cache
 - [x] fix logical or
 - [x] remove flash on edit flow
 - [x] delete cache on flow delete
-- [ ] show node name in toast + preview link
-- [ ] rename df to lf for lazyframes
+- [-] show node name in toast + preview link
+- [x] rename df to lf for lazyframes
 - [ ] fix log queue when too rapid
+- [ ] factor node form dialogs
 
+mobile
+
+- [x] show nodes outside minimap bounds
+- [x] add dialog header top paddingo
+- [x] on double tap node, zoom
+- [x] default orientation to landscape
+- [x] adapt dialog height to keyboard or allow scroll
+- [x] no marginx on dialog / max width screen
+- [ ] test ios
+- [ ] optional option for dialog fullscreen
+- [ ] fix file path in android
+- [ ] centered dialog: take into account keyboard height

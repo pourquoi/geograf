@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/input-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ExecutionLogs from "./ExecutionLogs";
+import { cheatsheetContext } from "./Cheatsheet";
 
 type GroupByNodeData = {
   label: string;
@@ -41,6 +42,7 @@ type GroupByNodeData = {
 
 export type GroupByNode = Node<GroupByNodeData, "GroupByNode">;
 const GroupByNode = (props: NodeProps<GroupByNode>) => {
+  const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const store = useFlowStore();
 
   const [showForm, setShowForm] = useState(false);
@@ -103,27 +105,39 @@ const GroupByNode = (props: NodeProps<GroupByNode>) => {
       />
       <Footer nodeId={props.id} />
 
-      <CheatsheetProvider>
+      <cheatsheetContext.Provider
+        value={{
+          open: cheatsheetOpen,
+          setOpen: setCheatsheetOpen,
+          toggle: () => setCheatsheetOpen(!cheatsheetOpen),
+        }}
+      >
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="sm:w-auto sm:max-w-[calc(100%-2rem)]">
+          <DialogContent className="w-screen px-2 sm:px-6 max-w-screen sm:h-auto sm:rounded-lg sm:w-auto sm:max-w-[calc(100vw-2rem)]">
             <DialogHeader>
               <DialogTitle>GroupBy settings</DialogTitle>
             </DialogHeader>
-            <div className="flex flex-row gap-8">
-              <ScrollArea className="max-h-[85vh] pt-5 overflow-y-auto overflow-x-visible flex-1 flex flex-col gap-2">
-                <GroupByForm
-                  className="flex-1 sm:w-[500px] sm:max-w-[700px]"
-                  id={props.id}
-                  data={props.data}
-                  onSave={(values, close) => setShowForm(!close)}
-                  onCancel={() => setShowForm(false)}
-                />
-              </ScrollArea>
-              <CheatsheetContext className="pl-12 flex-1" />
-            </div>
+            <ScrollArea
+              className={cn(
+                "max-h-dvh-safe-[85dvh] max-w-screen pt-2 overflow-y-auto overflow-x-visible flex-1 flex flex-col md:gap-2",
+              )}
+            >
+              <GroupByForm
+                className="flex-1 sm:w-[500px] sm:max-w-[700px]"
+                id={props.id}
+                data={props.data}
+                onSave={(values, close) => setShowForm(!close)}
+                onCancel={() => setShowForm(false)}
+              />
+            </ScrollArea>
+            <Dialog open={cheatsheetOpen} onOpenChange={setCheatsheetOpen}>
+              <DialogContent className="px-0 sm:px-6">
+                <CheatsheetContext />
+              </DialogContent>
+            </Dialog>
           </DialogContent>
         </Dialog>
-      </CheatsheetProvider>
+      </cheatsheetContext.Provider>
     </BaseNode>
   );
 };

@@ -10,6 +10,8 @@ import { executeNode, loadFlow, saveFlow } from "@/commands";
 export type FlowState = {
   id: string | undefined;
   name: string | undefined;
+  created_at: string | undefined;
+  updated_at: string | undefined;
   nodes: Node[];
   edges: Edge[];
   previews: Record<string, { status: string } & Partial<NodeExecutionPreview>>;
@@ -51,6 +53,8 @@ const useFlowStore = create<FlowState & FlowActions>((set, get) => {
   return {
     id: undefined,
     name: undefined,
+    created_at: undefined,
+    updated_at: undefined,
     executions: {},
     previews: {},
     nodes: [],
@@ -68,13 +72,21 @@ const useFlowStore = create<FlowState & FlowActions>((set, get) => {
       set({
         previews: {},
         id,
+        created_at: undefined,
+        updated_at: undefined,
         name: undefined,
         nodes: [],
         executions: {},
         edges: [],
       });
       const flow = await loadFlow(id);
-      set({ name: flow.name, nodes: flow.nodes, edges: flow.edges });
+      set({
+        name: flow.name,
+        created_at: flow.created_at,
+        updated_at: flow.updated_at,
+        nodes: flow.nodes,
+        edges: flow.edges,
+      });
     },
     addNodeExecutionMessage(msg: NodeExecutionMessage) {
       set((state) => {
@@ -123,6 +135,8 @@ const useFlowStore = create<FlowState & FlowActions>((set, get) => {
         name,
         nodes,
         edges,
+        created_at: new Date(get().created_at || "").toISOString(),
+        updated_at: new Date(get().updated_at || "").toISOString(),
       });
     },
     run: async (nodeId: string) => {

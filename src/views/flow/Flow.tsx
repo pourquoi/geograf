@@ -131,9 +131,10 @@ export default function Flow({ onSwitch }: { onSwitch?: () => void }) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           minZoom={0.01}
+          colorMode="dark"
           fitView
         >
-          <div className="fixed z-200 pt-0 top-0 left-0 w-screen h-dvh pointer-events-none">
+          <div className="fixed z-200 py-safe-offset-1 top-0 left-0 w-screen h-dvh pointer-events-none">
             <div className="grid grid-cols-[min-content_1fr] md:grid-cols-3 items-center gap-2 p-2 justify-between relative ">
               <div className="flex w-auto items-center gap-2">
                 <Button
@@ -144,16 +145,28 @@ export default function Flow({ onSwitch }: { onSwitch?: () => void }) {
                 >
                   <LuArrowLeftRight className="" />
                 </Button>
-                <div className="text-lg mr-8"> {name}</div>
+                <div
+                  className="text-lg mr-8"
+                  style={{
+                    lineHeight: 1,
+                    overflow: "visible",
+                    textOverflow: "clip",
+                    maxWidth: "18vw",
+                    display: "inline-block",
+                    maxHeight: "1rem",
+                  }}
+                >
+                  {" "}
+                  {name}
+                </div>
               </div>
               <Commands className="mx-auto min-w-[200px]" />
               <div className="hidden md:invisible" />
             </div>
           </div>
-          <Background color="var(--foreground)" />
+          <Background />
           <MiniMap
-            maskColor="#00010e"
-            bgColor="#5c6881"
+            maskColor="rgba(80, 80, 80, 0.5)"
             nodeColor="#00010e"
             pannable={true}
             position="bottom-left"

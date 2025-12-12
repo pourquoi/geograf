@@ -42,6 +42,9 @@
 }
 
 :root {
+  /* --twsa-safe-area-inset-top: 20px; */
+  --twsa-safe-area-inset-top: env(safe-area-inset-top);
+  --twsa-safe-area-inset-bottom: env(safe-area-inset-bottom);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
@@ -135,6 +138,31 @@
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
   }
+}
+
+@utility py-safe-offset-* {
+  padding-top: --spacing(
+    --value(integer, [integer]) + var(--twsa-safe-area-inset-top)
+  );
+  padding-bottom: --spacing(
+    --value(integer, [integer]) + var(--twsa-safe-area-inset-bottom)
+  );
+}
+
+@utility top-safe-* {
+  top: --spacing(--value(integer, [integer]) + var(--twsa-safe-area-inset-top));
+}
+
+@utility max-h-dvh-safe-* {
+  max-height: calc(
+    --value([*]) -
+      (var(--twsa-safe-area-inset-top) + var(--twsa-safe-area-inset-bottom))
+  );
+}
+
+body {
+  position: relative;
+  height: 100dvh;
 }
 
 .justify-end-fixed {

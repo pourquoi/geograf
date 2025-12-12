@@ -81,6 +81,10 @@ impl NodeExecutor for SourceNodeExecutor {
             return None;
         }
 
+        if !self.source.starts_with("http://") && !self.source.starts_with("https://") {
+            return None;
+        }
+
         let lf = self.node.load_lf(state).await;
 
         if let Some(lf) = lf {
@@ -219,6 +223,15 @@ impl NodeExecutor for SourceNodeExecutor {
 
         let lf = load_local_lf(&path, &self.format)
             .map_err(|e| NodeExecutionError::Custom(e.to_string()))?;
+
+        _ = tx
+            .send(NodeExecutionMessage::Log {
+                node_id: self.node.id.clone(),
+                run_id: options.run_id.clone(),
+                ts: options.run_start.elapsed().as_micros(),
+                message: format!("loaded {}", path),
+            })
+            .await;
 
         Ok(HashMap::from([(
             DEFAULT_OUTPUT.to_string(),
